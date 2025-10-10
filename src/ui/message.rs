@@ -37,7 +37,10 @@ pub enum EditMessage {
     HandleInput(KeyEvent),
     Confirm,
     Switch,
-    Quit,
+    SwitchLeft,
+    SwitchRight,
+    Quit(Option<usize>),
+    Back,
 }
 
 #[derive(Debug, PartialEq)]

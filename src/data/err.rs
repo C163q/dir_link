@@ -15,6 +15,7 @@ pub enum ErrorKind {
     InvaildPath,
     DuplicatedLinkIdentifer(Link),
     DuplicatedLinkDirIdentifer(LinkDir),
+    DuplicatedIdentifer(String),
 }
 
 impl Error {
@@ -38,6 +39,7 @@ impl ErrorKind {
             ErrorKind::InvaildPath => "invaild path",
             ErrorKind::DuplicatedLinkIdentifer(_) => "duplicated link identifer",
             ErrorKind::DuplicatedLinkDirIdentifer(_) => "duplicated link dir identifer",
+            ErrorKind::DuplicatedIdentifer(_) => "duplicated identifer",
         }
     }
 }

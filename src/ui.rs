@@ -3,12 +3,13 @@ use std::ops::Deref;
 
 use ratatui::crossterm::event::{self, Event};
 use ratatui::prelude::*;
-use ratatui::widgets::{ListState, TableState, Widget};
+use ratatui::widgets::{Clear, ListState, TableState, Widget};
 
 use state::AppState;
 
 use crate::data::dirset::LinkDirSet;
 use crate::data::link::QuitData;
+use crate::ui::state::EditPart;
 use state::{FolderNormalState, NormalPart};
 
 pub mod key;
@@ -21,8 +22,16 @@ pub struct App {
     data: LinkDirSet,
 }
 
-impl Widget for &mut App {
-    fn render(self, area: Rect, buf: &mut Buffer) {
+pub struct AppData {
+    cursor: Option<(u16, u16)>,
+    // TODO: handle failure
+    success: bool,
+}
+
+impl StatefulWidget for &mut App {
+    type State = AppData;
+    fn render(self, area: Rect, buf: &mut Buffer, data: &mut Self::State) {
+        data.cursor = None;
         view::render_border(self, area, buf);
 
         let chunks = Layout::default()
@@ -42,6 +51,24 @@ impl Widget for &mut App {
 
         let default_state = &mut TableState::default();
         view::render_right_list(self, chunks[2], buf, default_state);
+
+        match &mut self.state {
+            AppState::Edit(part) => match &mut **part {
+                EditPart::Folder(state) => {
+                    let area = view::common::centered_rect(50, 25, area);
+                    Clear.render(area, buf);
+                    let cursor = view::render_folder_edit(state, area, buf);
+                    data.cursor = cursor;
+                }
+                EditPart::Link(_) => {
+                    // TODO
+                }
+            },
+            AppState::Quit(_) => {
+                // TODO
+            }
+            AppState::Normal(_) => {}
+        }
     }
 }
 
@@ -53,17 +80,22 @@ impl App {
         }
     }
 
-    pub fn run<B: Backend>(&mut self, mut terminal: Terminal<B>, success: bool) -> io::Result<QuitData> {
-        loop {
+    pub fn run<B: Backend>(mut self, mut terminal: Terminal<B>, success: bool) -> io::Result<(QuitData, LinkDirSet)> {
+        let quit_data = loop {
             terminal.draw(|f| {
-                f.render_widget(&mut *self, f.area());
+                let mut data = AppData { cursor: None, success };
+                f.render_stateful_widget(&mut self, f.area(), &mut data);
+                if let Some(pos) = data.cursor {
+                    f.set_cursor_position(pos);
+                }
             })?;
             self.handle_event()?;
             if let AppState::Quit(data) = &self.state {
                 // TODO: 性能损耗，之后尝试改进
-                break Ok(data.deref().clone());
+                break data.deref().clone();
             }
-        }
+        };
+        Ok((quit_data, self.data))
     }
 
     pub fn handle_event(&mut self) -> io::Result<()> {

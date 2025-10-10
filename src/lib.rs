@@ -24,9 +24,16 @@ pub fn run_app<B: Backend>(data_path: &Path, terminal: Terminal<B>) -> io::Resul
 
     let result = App::new(data).run(terminal, success);
 
-    result.map(|_| {
-        // TODO: Handle result
-    })
+    match result {
+        Ok(data) =>{
+            let mut file = BufWriter::new(File::create(data_path)?);
+            file.write_all(serde_json::to_vec(&data.1)?.as_slice())?;
+            if let Some(link) = data.0.link() {
+                println!("{:?}", link.path().as_os_str());
+            }
+            Ok(())
+        }
+        // TODO: use color_eyre
+        Err(value) => Err(value)
+    }
 }
-
-

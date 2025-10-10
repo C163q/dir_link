@@ -1,12 +1,13 @@
 use ratatui::prelude::*;
+use ratatui::style::Styled;
 use ratatui::widgets::{
-    Block, BorderType, Borders, Cell, HighlightSpacing, List, ListItem, ListState, Row, Table,
-    TableState,
+    Block, BorderType, Borders, Cell, HighlightSpacing, List, ListItem, ListState, Paragraph, Row,
+    Table, TableState, Wrap,
 };
 use ratatui::{buffer::Buffer, layout::Rect};
 
 use crate::ui::App;
-use crate::ui::state::AppState;
+use crate::ui::state::{AppState, FolderEditState, InputMode};
 
 pub mod common;
 
@@ -42,8 +43,10 @@ pub fn render_left_list<'a>(
         app.data
             .map()
             .iter()
-            .map(|dir| ListItem::new(dir.identifier())),
-    );
+            .map(|dir| ListItem::new(dir.identifier().set_style(Color::Cyan))),
+    )
+    .highlight_style(Style::default().bg(Color::Cyan).fg(Color::Black))
+    .highlight_spacing(HighlightSpacing::Always);
 
     let left_state = app.state.folder_list_state_mut().unwrap_or(default);
     <List as StatefulWidget>::render(list, area, buf, left_state);
@@ -85,7 +88,7 @@ pub fn render_right_list<'a>(
                 [Constraint::Percentage(30), Constraint::Percentage(70)],
             )
             .header(header)
-            .row_highlight_style(Style::default().bg(Color::Blue))
+            .row_highlight_style(Style::default().bg(Color::Cyan).fg(Color::Black))
             .highlight_spacing(HighlightSpacing::Always);
 
             let select = app.state.link_table_state_mut().unwrap_or(default);
@@ -104,4 +107,67 @@ pub fn render_right_list_empty(area: Rect, buf: &mut Buffer) {
         )
         .centered()
         .render(area, buf);
+}
+
+pub fn render_folder_edit(
+    state: &mut FolderEditState,
+    area: Rect,
+    buf: &mut Buffer,
+) -> Option<(u16, u16)> {
+    let edit_type = match state.list_state().selected() {
+        Some(_) => "Rename".set_style(Color::Cyan),
+        None => "Append".set_style(Color::Green),
+    };
+    let edit_state = match state.mode() {
+        InputMode::Editing => "E".set_style(Color::Yellow).bold(),
+        InputMode::Normal => "N".set_style(Color::Yellow).bold(),
+    };
+
+    let block = Block::bordered()
+        .border_style(Style::default().fg(Color::White))
+        .title_top(Line::from("Edit").centered())
+        .title_bottom(Line::from(edit_type).left_aligned())
+        .title_bottom(Line::from(edit_state).right_aligned())
+        .border_type(BorderType::Thick);
+    block.render(area, buf);
+
+    let chunks = Layout::default()
+        .constraints([Constraint::Length(1), Constraint::Min(3)])
+        .margin(1)
+        .split(area);
+
+    let text = Line::from("Input Folder Name:")
+        .left_aligned()
+        .style(Style::default().fg(Color::White));
+    text.render(chunks[0], buf);
+
+    let mode = state.mode().to_owned();
+    let input = state.input_mut();
+    let width = chunks[1].width.saturating_sub(3);
+    let scroll = input.visual_scroll(width as usize);
+
+    let style = match mode {
+        InputMode::Normal => Style::default(),
+        InputMode::Editing => Style::default().fg(Color::Yellow),
+    };
+    let input_text = Paragraph::new(input.value())
+        .style(style)
+        .scroll((0, scroll as u16))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .border_style(style)
+                .title_top(Line::from("Input").centered().style(style))
+                .style(style),
+        )
+        .wrap(Wrap { trim: false });
+    input_text.render(chunks[1], buf);
+
+    if mode == InputMode::Editing {
+        let x = input.visual_cursor().max(scroll) - scroll + 1;
+        Some((chunks[1].x + x as u16, chunks[1].y + 1))
+    } else {
+        None
+    }
 }

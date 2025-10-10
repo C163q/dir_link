@@ -47,6 +47,20 @@ impl LinkDirSet {
         item
     }
 
+    pub fn rename(&mut self, idx: usize, identifier: String) -> Result<(), Error> {
+        if self.set.contains(&identifier) {
+            return Err(Error::new(
+                ErrorKind::DuplicatedIdentifer(identifier),
+                "same identifer already exists",
+            ));
+        }
+        let dir = &mut self.map[idx];
+        self.set.remove(dir.identifier());
+        dir.set_identifier(&identifier)?;
+        self.set.insert(identifier);
+        Ok(())
+    }
+
     pub fn swap(&mut self, a: usize, b: usize) {
         self.map.swap(a, b);
     }

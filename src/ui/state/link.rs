@@ -1,9 +1,10 @@
-use std::ffi::{OsStr, OsString};
+use std::ffi::{OsStr};
 
 use super::{InputMode, InputPart};
 use crate::{ui::state::FolderNormalState};
 
 use ratatui::widgets::{ListState, TableState};
+use tui_input::Input;
 
 #[derive(Debug)]
 pub struct LinkNormalState {
@@ -16,7 +17,7 @@ pub struct LinkEditState {
     state: LinkNormalState,
     mode: InputMode,
     part: InputPart,
-    value: (String, OsString),
+    input: (Input, Input),
 }
 
 impl LinkNormalState {
@@ -61,9 +62,9 @@ impl LinkEditState {
     pub fn new(from: usize, selected: Option<usize>) -> Self {
         Self {
             state: LinkNormalState::with_selected(from, selected),
-            mode: InputMode::Normal,
+            mode: InputMode::Editing,
             part: InputPart::Key,
-            value: (String::new(), OsString::new()),
+            input: (Input::default(), Input::default()),
         }
     }
 
@@ -88,7 +89,9 @@ impl LinkEditState {
     }
 
     pub fn with_value(mut self, key: &str, value: &OsStr) -> Self {
-        self.value = (key.to_string(), value.to_os_string());
+        let key_input = Input::new(key.to_string());
+        let value_input = Input::new(value.to_string_lossy().to_string());
+        self.input = (key_input, value_input);
         self
     }
 }

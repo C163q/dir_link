@@ -1,6 +1,7 @@
 use super::{InputMode};
 
 use ratatui::widgets::{ListState};
+use tui_input::Input;
 
 #[derive(Debug)]
 pub struct FolderNormalState {
@@ -11,7 +12,7 @@ pub struct FolderNormalState {
 pub struct FolderEditState {
     state: FolderNormalState,
     mode: InputMode,
-    value: String,
+    input: Input,
 }
 
 impl Default for FolderNormalState {
@@ -49,8 +50,8 @@ impl FolderEditState {
     pub fn new(selected: Option<usize>) -> Self {
         Self {
             state: FolderNormalState::with_selected(selected),
-            mode: InputMode::Normal,
-            value: String::new(),
+            mode: InputMode::Editing,
+            input: Input::default(),
         }
     }
 
@@ -66,11 +67,15 @@ impl FolderEditState {
     }
 
     pub fn value(&self) -> &str {
-        &self.value
+        self.input.value()
     }
 
-    pub fn value_mut(&mut self) -> &mut String {
-        &mut self.value
+    pub fn input(&self) -> &Input {
+        &self.input
+    }
+
+    pub fn input_mut(&mut self) -> &mut Input {
+        &mut self.input
     }
 
     pub fn state(&self) -> &FolderNormalState {
@@ -86,7 +91,8 @@ impl FolderEditState {
     }
 
     pub fn with_value(mut self, value: &str) -> Self {
-        self.value = value.to_string();
+        let input = Input::new(value.to_string());
+        self.input = input;
         self
     }
 }

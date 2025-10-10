@@ -1,13 +1,17 @@
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 
+pub mod edit;
 pub mod normal;
 
 use crate::{
     data::{dir::LinkDir, dirset::LinkDirSet},
     ui::{
         App,
-        message::{NormalFolderMessage, NormalLinkMessage},
-        state::{AppState, EditPart, FolderNormalState, LinkNormalState, NormalPart},
+        message::{EditMessage, NormalFolderMessage, NormalLinkMessage},
+        state::{
+            AppState, EditPart, FolderEditState, FolderNormalState, InputMode, LinkNormalState,
+            NormalPart,
+        },
     },
 };
 
@@ -35,8 +39,13 @@ pub fn handle_key_event(app: &mut App, key: KeyEvent) {
         AppState::Edit(part) => match &mut **part {
             EditPart::Folder(state) => {
                 let mut opt_msg = handle_edit_folder_key_event(key);
+                while let Some(msg) = opt_msg {
+                    (opt_msg, opt_mod) = handle_edit_folder_message(state, data, msg)
+                }
             }
-            _ => todo!()
+            _ => {
+                // TODO
+            }
         },
         AppState::Quit(_) => {}
     }
@@ -100,8 +109,8 @@ pub fn handle_normal_link_key_event(key: KeyEvent) -> Option<NormalLinkMessage> 
     }
 }
 
-pub fn handle_edit_folder_key_event(key: KeyEvent) -> Option<NormalFolderMessage> {
-    None
+pub fn handle_edit_folder_key_event(key: KeyEvent) -> Option<EditMessage> {
+    Some(EditMessage::HandleInput(key))
 }
 
 pub fn handle_normal_folder_message(
@@ -145,3 +154,35 @@ pub fn handle_normal_link_message(
     }
 }
 
+pub fn handle_edit_folder_message(
+    state: &mut FolderEditState,
+    data: &mut LinkDirSet,
+    message: EditMessage,
+) -> (Option<EditMessage>, Option<AppState>) {
+    match state.mode() {
+        InputMode::Normal => match message {
+            EditMessage::HandleInput(key_event) => {
+                edit::folder_handle_input_normal(state, data, key_event)
+            }
+            EditMessage::Edit => edit::folder_edit_normal(state, data),
+            EditMessage::Confirm => edit::folder_confirm_normal(state, data),
+            EditMessage::Switch => (None, None),
+            EditMessage::SwitchLeft => (None, None),
+            EditMessage::SwitchRight => (None, None),
+            EditMessage::Quit(select) => edit::folder_quit_normal(state, data, select),
+            EditMessage::Back => (None, None),
+        },
+        InputMode::Editing => match message {
+            EditMessage::HandleInput(key_event) => {
+                edit::folder_handle_input_editing(state, data, key_event)
+            }
+            EditMessage::Edit => (None, None),
+            EditMessage::Confirm => edit::folder_confirm_editing(state, data),
+            EditMessage::Switch => (None, None),
+            EditMessage::SwitchLeft => (None, None),
+            EditMessage::SwitchRight => (None, None),
+            EditMessage::Quit(select) => edit::folder_quit_editing(state, data, select),
+            EditMessage::Back => edit::folder_back_editing(state, data),
+        },
+    }
+}

@@ -2,7 +2,6 @@ use std::fs;
 
 use color_eyre::eyre;
 use directories::BaseDirs;
-use serde::Serialize;
 
 
 fn main() -> color_eyre::Result<()> {
@@ -18,11 +17,4 @@ fn main() -> color_eyre::Result<()> {
     let result = dir_link::run_app(&local_data, terminal);
     ratatui::restore();
     result.map_err(|e| eyre::eyre!(e))
-}
-
-
-fn test() {
-    let s = std::ffi::OsString::new();
-    let mut vec = serde_json::Serializer::new(Vec::with_capacity(128));
-    s.serialize(&mut vec);
 }
