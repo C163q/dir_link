@@ -5,9 +5,10 @@ use ratatui::widgets::{
     Table, TableState, Wrap,
 };
 use ratatui::{buffer::Buffer, layout::Rect};
+use tui_input::Input;
 
 use crate::ui::App;
-use crate::ui::state::{AppState, FolderEditState, InputMode};
+use crate::ui::state::{AppState, FolderEditState, InputMode, InputPart, LinkEditState};
 
 pub mod common;
 
@@ -65,17 +66,24 @@ pub fn render_right_list<'a>(
         .filter(|&idx| idx < app.data.len());
 
     match idx {
-        None => {
-            let area = common::center(area, Constraint::Length(5), Constraint::Length(1));
-            render_right_list_empty(area, buf);
-        }
-        Some(idx) => {
+        Some(idx) if !app.data[idx].is_empty() => {
+            let header_style = if app.state.is_link() {
+                Style::default()
+                    .fg(Color::LightCyan)
+                    .add_modifier(Modifier::BOLD)
+            } else {
+                Style::default()
+                    .fg(Color::White)
+                    .add_modifier(Modifier::BOLD)
+            };
+
             // TODO: style
             let header = ["Name", "Path"]
                 .into_iter()
                 .map(Cell::from)
                 .collect::<Row>()
-                .height(1);
+                .height(1)
+                .style(header_style);
 
             let rows = app.data[idx].iter().map(|link| {
                 let identifier = link.identifier();
@@ -95,30 +103,93 @@ pub fn render_right_list<'a>(
 
             <Table as StatefulWidget>::render(table, area, buf, select);
         }
+        _ => {
+            let area = common::center(area, Constraint::Length(5), Constraint::Length(1));
+            let focused = app.state.is_link();
+            render_right_list_empty(area, buf, focused);
+        }
     };
 }
 
-pub fn render_right_list_empty(area: Rect, buf: &mut Buffer) {
-    Text::raw("Empty")
-        .style(
-            Style::default()
-                .fg(Color::White)
-                .add_modifier(Modifier::BOLD),
-        )
-        .centered()
-        .render(area, buf);
+pub fn render_right_list_empty(area: Rect, buf: &mut Buffer, focused: bool) {
+    let style = if focused {
+        Style::default()
+            .bg(Color::Yellow)
+            .fg(Color::Black)
+            .add_modifier(Modifier::BOLD)
+    } else {
+        Style::default()
+            .fg(Color::White)
+            .add_modifier(Modifier::BOLD)
+    };
+    Text::raw("Empty").style(style).centered().render(area, buf);
 }
 
-pub fn render_folder_edit(
-    state: &mut FolderEditState,
+pub fn render_input(
+    input: &mut Input,
+    hint_message: &str,
+    input_mode: InputMode,
     area: Rect,
     buf: &mut Buffer,
+    ghost_text: Option<&str>,
 ) -> Option<(u16, u16)> {
-    let edit_type = match state.list_state().selected() {
+    let chunks = Layout::default()
+        .constraints([Constraint::Length(1), Constraint::Min(3)])
+        .split(area);
+    let text = Line::from(hint_message)
+        .left_aligned()
+        .style(Style::default().fg(Color::White));
+    text.render(chunks[0], buf);
+
+    let width = chunks[1].width.saturating_sub(3);
+    let scroll = input.visual_scroll(width as usize);
+
+    let style = match input_mode {
+        InputMode::Normal => Style::default().fg(Color::White),
+        InputMode::Editing => Style::default().fg(Color::Yellow),
+    };
+
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_type(BorderType::Rounded)
+        .border_style(style)
+        .title_top(Line::from("Input").centered().style(style))
+        .style(style);
+
+    let input_text = match ghost_text {
+        None => Paragraph::new(input.value())
+            .style(Style::default())
+            .scroll((0, scroll as u16))
+            .block(block)
+            .wrap(Wrap { trim: false }),
+        Some(text) if input.value().is_empty() => Paragraph::new(text)
+            .style(Style::default().fg(Color::DarkGray).italic())
+            .scroll((0, scroll as u16))
+            .block(block)
+            .wrap(Wrap { trim: false }),
+        Some(_) => Paragraph::new(input.value())
+            .style(Style::default())
+            .scroll((0, scroll as u16))
+            .block(block)
+            .wrap(Wrap { trim: false }),
+    };
+    input_text.render(chunks[1], buf);
+
+    if input_mode == InputMode::Editing {
+        let x = input.visual_cursor().saturating_sub(scroll) + 1;
+        let (x_offset, y_offset) = ((x % width as usize) as u16, (x / width as usize) as u16);
+        Some((chunks[1].x + x_offset, chunks[1].y + 1 + y_offset))
+    } else {
+        None
+    }
+}
+
+pub fn render_input_block(select: Option<usize>, mode: &InputMode, area: Rect, buf: &mut Buffer) {
+    let edit_type = match select {
         Some(_) => "Rename".set_style(Color::Cyan),
         None => "Append".set_style(Color::Green),
     };
-    let edit_state = match state.mode() {
+    let edit_state = match mode {
         InputMode::Editing => "E".set_style(Color::Yellow).bold(),
         InputMode::Normal => "N".set_style(Color::Yellow).bold(),
     };
@@ -130,44 +201,68 @@ pub fn render_folder_edit(
         .title_bottom(Line::from(edit_state).right_aligned())
         .border_type(BorderType::Thick);
     block.render(area, buf);
+}
 
-    let chunks = Layout::default()
-        .constraints([Constraint::Length(1), Constraint::Min(3)])
-        .margin(1)
-        .split(area);
-
-    let text = Line::from("Input Folder Name:")
-        .left_aligned()
-        .style(Style::default().fg(Color::White));
-    text.render(chunks[0], buf);
+pub fn render_folder_edit(
+    state: &mut FolderEditState,
+    area: Rect,
+    buf: &mut Buffer,
+) -> Option<(u16, u16)> {
+    render_input_block(state.list_state().selected(), state.mode(), area, buf);
 
     let mode = state.mode().to_owned();
-    let input = state.input_mut();
-    let width = chunks[1].width.saturating_sub(3);
-    let scroll = input.visual_scroll(width as usize);
+    let chunk = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Min(0)])
+        .margin(1)
+        .split(area)[0];
+    render_input(
+        state.input_mut(),
+        "Input Folder Name:",
+        mode,
+        chunk,
+        buf,
+        None,
+    )
+}
 
-    let style = match mode {
-        InputMode::Normal => Style::default(),
-        InputMode::Editing => Style::default().fg(Color::Yellow),
+pub fn render_link_edit(
+    state: &mut LinkEditState,
+    area: Rect,
+    buf: &mut Buffer,
+) -> Option<(u16, u16)> {
+    render_input_block(state.table_state().selected(), state.mode(), area, buf);
+
+    let mode = state.mode().to_owned();
+    let key_mode = match state.part() {
+        InputPart::Key => mode,
+        InputPart::Value => InputMode::Normal,
     };
-    let input_text = Paragraph::new(input.value())
-        .style(style)
-        .scroll((0, scroll as u16))
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_type(BorderType::Rounded)
-                .border_style(style)
-                .title_top(Line::from("Input").centered().style(style))
-                .style(style),
-        )
-        .wrap(Wrap { trim: false });
-    input_text.render(chunks[1], buf);
+    let value_mode = match state.part() {
+        InputPart::Key => InputMode::Normal,
+        InputPart::Value => mode,
+    };
 
-    if mode == InputMode::Editing {
-        let x = input.visual_cursor().max(scroll) - scroll + 1;
-        Some((chunks[1].x + x as u16, chunks[1].y + 1))
-    } else {
-        None
-    }
+    let chunks = Layout::default()
+        .constraints([Constraint::Percentage(40), Constraint::Percentage(60)])
+        .margin(1)
+        .split(area);
+    let key_pos = render_input(
+        state.key_input_mut(),
+        "Input Link Name",
+        key_mode,
+        chunks[0],
+        buf,
+        None,
+    );
+    let value_pos = render_input(
+        state.value_input_mut(),
+        "Input Link Path",
+        value_mode,
+        chunks[1],
+        buf,
+        Some("empty for current directory"),
+    );
+
+    key_pos.or(value_pos)
 }

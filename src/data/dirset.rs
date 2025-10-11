@@ -28,7 +28,7 @@ impl LinkDirSet {
     pub fn push(&mut self, dir: LinkDir) -> Result<(), Error> {
         if self.set.contains(dir.identifier()) {
             return Err(Error::new(
-                ErrorKind::DuplicatedLinkDirIdentifer(dir),
+                ErrorKind::DuplicatedLinkDirIdentifier(dir),
                 "same identifer already exists",
             ));
         }
@@ -47,17 +47,17 @@ impl LinkDirSet {
         item
     }
 
-    pub fn rename(&mut self, idx: usize, identifier: String) -> Result<(), Error> {
-        if self.set.contains(&identifier) {
+    pub fn rename(&mut self, idx: usize, identifier: &str) -> Result<(), Error> {
+        if self.set.contains(identifier) {
             return Err(Error::new(
-                ErrorKind::DuplicatedIdentifer(identifier),
+                ErrorKind::DuplicatedIdentifier,
                 "same identifer already exists",
             ));
         }
         let dir = &mut self.map[idx];
         self.set.remove(dir.identifier());
-        dir.set_identifier(&identifier)?;
-        self.set.insert(identifier);
+        dir.set_identifier(identifier)?;
+        self.set.insert(identifier.to_string());
         Ok(())
     }
 

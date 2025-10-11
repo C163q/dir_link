@@ -1,4 +1,3 @@
-
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum InputMode {
     #[default]
@@ -12,4 +11,3 @@ pub enum InputPart {
     Key,
     Value,
 }
-

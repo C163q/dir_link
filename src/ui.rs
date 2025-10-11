@@ -1,5 +1,4 @@
 use std::io;
-use std::ops::Deref;
 
 use ratatui::crossterm::event::{self, Event};
 use ratatui::prelude::*;
@@ -8,8 +7,9 @@ use ratatui::widgets::{Clear, ListState, TableState, Widget};
 use state::AppState;
 
 use crate::data::dirset::LinkDirSet;
-use crate::data::link::QuitData;
+use crate::debug::Debugger;
 use crate::ui::state::EditPart;
+use crate::DataTransfer;
 use state::{FolderNormalState, NormalPart};
 
 pub mod key;
@@ -23,9 +23,9 @@ pub struct App {
 }
 
 pub struct AppData {
-    cursor: Option<(u16, u16)>,
+    pub cursor: Option<(u16, u16)>,
     // TODO: handle failure
-    success: bool,
+    pub success: bool,
 }
 
 impl StatefulWidget for &mut App {
@@ -60,8 +60,11 @@ impl StatefulWidget for &mut App {
                     let cursor = view::render_folder_edit(state, area, buf);
                     data.cursor = cursor;
                 }
-                EditPart::Link(_) => {
-                    // TODO
+                EditPart::Link(state) => {
+                    let area = view::common::centered_rect(60, 30, area);
+                    Clear.render(area, buf);
+                    let cursor = view::render_link_edit(state, area, buf);
+                    data.cursor = cursor;
                 }
             },
             AppState::Quit(_) => {
@@ -80,22 +83,31 @@ impl App {
         }
     }
 
-    pub fn run<B: Backend>(mut self, mut terminal: Terminal<B>, success: bool) -> io::Result<(QuitData, LinkDirSet)> {
-        let quit_data = loop {
+    pub fn run<B: Backend>(
+        mut self,
+        mut terminal: Terminal<B>,
+        success: bool,
+        mut data_transfer: DataTransfer
+    ) -> io::Result<(DataTransfer, LinkDirSet)> {
+        loop {
             terminal.draw(|f| {
-                let mut data = AppData { cursor: None, success };
+                let mut data = AppData {
+                    cursor: None,
+                    success,
+                };
                 f.render_stateful_widget(&mut self, f.area(), &mut data);
                 if let Some(pos) = data.cursor {
                     f.set_cursor_position(pos);
                 }
             })?;
             self.handle_event()?;
-            if let AppState::Quit(data) = &self.state {
+            if let AppState::Quit(data) = &mut self.state {
                 // TODO: 性能损耗，之后尝试改进
-                break data.deref().clone();
+                data_transfer.link = data.link.take();
+                break;
             }
         };
-        Ok((quit_data, self.data))
+        Ok((data_transfer, self.data))
     }
 
     pub fn handle_event(&mut self) -> io::Result<()> {

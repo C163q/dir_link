@@ -7,7 +7,7 @@ pub use folder::*;
 pub use link::*;
 use ratatui::widgets::{ListState, TableState};
 
-use crate::data::link::QuitData;
+use crate::DataTransfer;
 
 #[derive(Debug)]
 pub enum NormalPart {
@@ -25,7 +25,7 @@ pub enum EditPart {
 pub enum AppState {
     Normal(Box<NormalPart>),
     Edit(Box<EditPart>),
-    Quit(Box<QuitData>),
+    Quit(Box<DataTransfer>),
 }
 
 impl Default for AppState {

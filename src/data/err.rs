@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
-use super::link::Link;
 use super::dir::LinkDir;
+use super::link::Link;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Error {
@@ -11,11 +11,11 @@ pub struct Error {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ErrorKind {
-    InvaildIdentifer,
+    InvaildIdentifier,
     InvaildPath,
-    DuplicatedLinkIdentifer(Link),
-    DuplicatedLinkDirIdentifer(LinkDir),
-    DuplicatedIdentifer(String),
+    DuplicatedLinkIdentifier(Link),
+    DuplicatedLinkDirIdentifier(LinkDir),
+    DuplicatedIdentifier,
 }
 
 impl Error {
@@ -35,11 +35,11 @@ impl Error {
 impl ErrorKind {
     pub fn as_str(&self) -> &'static str {
         match self {
-            ErrorKind::InvaildIdentifer => "invaild identifer",
+            ErrorKind::InvaildIdentifier => "invaild identifier",
             ErrorKind::InvaildPath => "invaild path",
-            ErrorKind::DuplicatedLinkIdentifer(_) => "duplicated link identifer",
-            ErrorKind::DuplicatedLinkDirIdentifer(_) => "duplicated link dir identifer",
-            ErrorKind::DuplicatedIdentifer(_) => "duplicated identifer",
+            ErrorKind::DuplicatedLinkIdentifier(_) => "duplicated link identifier",
+            ErrorKind::DuplicatedLinkDirIdentifier(_) => "duplicated link dir identifier",
+            ErrorKind::DuplicatedIdentifier => "duplicated identifier",
         }
     }
 }

@@ -1,6 +1,6 @@
-use super::{InputMode};
+use super::InputMode;
 
-use ratatui::widgets::{ListState};
+use ratatui::widgets::ListState;
 use tui_input::Input;
 
 #[derive(Debug)]
@@ -40,9 +40,7 @@ impl FolderNormalState {
 
     pub fn with_selected(selected: Option<usize>) -> Self {
         let list_state = ListState::default().with_selected(selected);
-        Self {
-            list_state,
-        }
+        Self { list_state }
     }
 }
 
@@ -96,4 +94,3 @@ impl FolderEditState {
         self
     }
 }
-

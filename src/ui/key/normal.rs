@@ -1,12 +1,12 @@
 use crate::{
-    data::{dir::LinkDir, dirset::LinkDirSet, link::QuitData},
+    data::{dir::LinkDir, dirset::LinkDirSet},
     ui::{
         message::{NormalFolderMessage, NormalLinkMessage},
         state::{
             AppState, EditPart, FolderEditState, FolderNormalState, LinkEditState, LinkNormalState,
             NormalPart,
         },
-    },
+    }, DataTransfer,
 };
 
 pub fn folder_select(
@@ -342,9 +342,12 @@ pub fn link_to_link(
     idx: usize,
 ) -> (Option<NormalLinkMessage>, Option<AppState>) {
     if idx < data.len() {
-        (None, Some(AppState::Quit(Box::new(QuitData::with_link(
-            data[idx].clone()
-        )))))
+        (
+            None,
+            Some(AppState::Quit(Box::new(DataTransfer::with_link(
+                data[idx].clone(),
+            )))),
+        )
     } else {
         (None, None)
     }

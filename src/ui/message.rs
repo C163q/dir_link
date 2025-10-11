@@ -1,4 +1,4 @@
-use ratatui::crossterm::event::{KeyEvent};
+use ratatui::crossterm::event::KeyEvent;
 
 #[derive(Debug, PartialEq)]
 pub enum NormalFolderMessage {
@@ -39,6 +39,7 @@ pub enum EditMessage {
     Switch,
     SwitchLeft,
     SwitchRight,
+    SwitchOrConfirm,
     Quit(Option<usize>),
     Back,
 }
@@ -49,5 +50,3 @@ pub enum PopUpMessage {
     No,
     Quit,
 }
-
-

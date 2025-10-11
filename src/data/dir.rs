@@ -1,4 +1,5 @@
 use std::ops::DerefMut;
+use std::path::Path;
 use std::{collections::HashSet, ops::Deref};
 
 use serde::de::{self, Visitor};
@@ -20,7 +21,7 @@ impl LinkDir {
     pub fn builder(identifier: &str) -> Result<Self, Error> {
         if identifier.is_empty() {
             return Err(Error::new(
-                ErrorKind::InvaildIdentifer,
+                ErrorKind::InvaildIdentifier,
                 "identifier is empty",
             ));
         }
@@ -38,7 +39,7 @@ impl LinkDir {
     pub fn set_identifier(&mut self, identifier: &str) -> Result<(), Error> {
         if identifier.is_empty() {
             return Err(Error::new(
-                ErrorKind::InvaildIdentifer,
+                ErrorKind::InvaildIdentifier,
                 "identifier is empty",
             ));
         }
@@ -57,7 +58,7 @@ impl LinkDir {
     pub fn push(&mut self, link: Link) -> Result<(), Error> {
         if self.set.contains(link.identifier()) {
             return Err(Error::new(
-                ErrorKind::DuplicatedLinkIdentifer(link),
+                ErrorKind::DuplicatedLinkIdentifier(link),
                 "same identifier already exists",
             ));
         }
@@ -74,6 +75,24 @@ impl LinkDir {
         let item = self.map.remove(index);
         self.set.remove(item.identifier());
         item
+    }
+
+    pub fn rename(&mut self, idx: usize, identifier: &str) -> Result<(), Error> {
+        if self.set.contains(identifier) {
+            return Err(Error::new(
+                ErrorKind::DuplicatedIdentifier,
+                "same identifier already exists",
+            ));
+        }
+        let link = &mut self.map[idx];
+        self.set.remove(link.identifier());
+        link.set_identifier(identifier)?;
+        self.set.insert(identifier.to_string());
+        Ok(())
+    }
+
+    pub fn relink(&mut self, idx: usize, path: &Path) -> Result<(), Error> {
+        self.map[idx].change_path(path)
     }
 
     pub fn swap(&mut self, a: usize, b: usize) {
