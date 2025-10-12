@@ -8,6 +8,7 @@ use state::AppState;
 
 use crate::data::dirset::LinkDirSet;
 use crate::debug::Debugger;
+use crate::ui::float::Float;
 use crate::ui::state::EditPart;
 use crate::DataTransfer;
 use state::{FolderNormalState, NormalPart};
@@ -16,10 +17,12 @@ pub mod key;
 pub mod message;
 pub mod state;
 pub mod view;
+pub mod float;
 
 pub struct App {
     state: AppState,
     data: LinkDirSet,
+    float: Float,
 }
 
 pub struct AppData {
@@ -80,6 +83,7 @@ impl App {
         Self {
             state: AppState::Normal(Box::new(NormalPart::Folder(FolderNormalState::new()))),
             data,
+            float: Float::default(),
         }
     }
 
