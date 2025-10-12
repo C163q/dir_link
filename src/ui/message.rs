@@ -1,6 +1,6 @@
 use ratatui::crossterm::event::KeyEvent;
 
-use crate::ui::state::AppState;
+use crate::ui::{float::{Float, FloatState}, state::AppState};
 
 pub trait AppMessage {}
 
@@ -55,18 +55,19 @@ pub enum EditMessage {
 impl AppMessage for EditMessage {}
 
 #[derive(Debug, PartialEq, Eq)]
-pub enum PopUpMessage {
+pub enum ConfirmMessage {
     Yes,
     No,
     Quit,
 }
 
-impl AppMessage for PopUpMessage {}
+impl AppMessage for ConfirmMessage {}
 
 #[derive(Debug)]
 pub struct MessageUpdater<M: AppMessage> {
     pub message: Option<M>,
     pub state: Option<AppState>,
+    pub float: Option<Float>
 }
 
 impl Default for MessageUpdater<NormalFolderMessage> {
@@ -80,6 +81,7 @@ impl<M: AppMessage> MessageUpdater<M> {
         Self {
             message: None,
             state: None,
+            float: None,
         }
     }
 
@@ -89,6 +91,41 @@ impl<M: AppMessage> MessageUpdater<M> {
     }
 
     pub fn with_state(mut self, state: AppState) -> Self {
+        self.state = Some(state);
+        self
+    }
+
+    pub fn with_float(mut self, float: Float) -> Self {
+        self.float = Some(float);
+        self
+    }
+}
+
+pub struct FloatUpdater<M: AppMessage, S: FloatState> {
+    pub message: Option<M>,
+    pub state: Option<S>,
+}
+
+impl<M: AppMessage, S: FloatState> Default for FloatUpdater<M, S> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<M: AppMessage, S: FloatState> FloatUpdater<M, S> {
+    pub fn new() -> Self {
+        Self {
+            message: None,
+            state: None,
+        }
+    }
+
+    pub fn with_message(mut self, message: M) -> Self {
+        self.message = Some(message);
+        self
+    }
+
+    pub fn with_state(mut self, state: S) -> Self {
         self.state = Some(state);
         self
     }

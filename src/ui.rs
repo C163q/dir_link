@@ -22,7 +22,7 @@ pub mod float;
 pub struct App {
     state: AppState,
     data: LinkDirSet,
-    float: Float,
+    float: Option<Float>,
 }
 
 pub struct AppData {
@@ -75,6 +75,16 @@ impl StatefulWidget for &mut App {
             }
             AppState::Normal(_) => {}
         }
+
+        if let Some(float) = &mut self.float {
+            match float {
+                Float::FolderDeleteConfirm(state) => {
+                    let area = view::common::centered_rect(50, 30, area);
+                    Clear.render(area, buf);
+                    view::render_folder_delete_confirm_float(state, area, buf)
+                }
+            }
+        }
     }
 }
 
@@ -83,7 +93,7 @@ impl App {
         Self {
             state: AppState::Normal(Box::new(NormalPart::Folder(FolderNormalState::new()))),
             data,
-            float: Float::default(),
+            float: None,
         }
     }
 

@@ -1,9 +1,19 @@
+use crate::{
+    data::dirset::LinkDirSet,
+    ui::{
+        float::confirm::{ConfirmChoice, FolderDeleteConfirmState},
+        state::FolderNormalState,
+    },
+};
+
 pub mod confirm;
 
-#[derive(Debug, Default)]
+pub type FolderDeleteConfirmCallbackType =
+    Box<dyn FnOnce(ConfirmChoice, &mut FolderNormalState, &mut LinkDirSet)>;
+
+#[derive(Debug)]
 pub enum Float {
-    #[default]
-    None,
-    DeleteConfirm,
+    FolderDeleteConfirm(FolderDeleteConfirmState<FolderDeleteConfirmCallbackType>),
 }
 
+pub trait FloatState {}

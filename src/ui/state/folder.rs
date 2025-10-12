@@ -80,6 +80,10 @@ impl FolderEditState {
         &self.state
     }
 
+    pub fn state_mut(&mut self) -> &mut FolderNormalState {
+        &mut self.state
+    }
+
     pub fn list_state(&self) -> &ListState {
         self.state.list_state()
     }

@@ -1,3 +1,10 @@
+use core::fmt;
+use std::{fmt::{Debug, Formatter}, fs, path::Path};
+
+use crate::{
+    data::dirset::LinkDirSet,
+    ui::{float::FloatState, state::FolderNormalState},
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ConfirmChoice {
@@ -6,17 +13,35 @@ pub enum ConfirmChoice {
     No,
 }
 
-pub struct DeleteConfirmState<F>
+// trait FolderDeleteConfirmCallback = FnOnce(ConfirmChoice, &mut FolderNormalState, &mut LinkDirSet);
+
+pub struct FolderDeleteConfirmState<F>
 where
-    F: FnOnce(ConfirmChoice),
+    F: FnOnce(ConfirmChoice, &mut FolderNormalState, &mut LinkDirSet),
 {
     choice: ConfirmChoice,
     callback: F,
 }
 
-impl<F> DeleteConfirmState<F>
+impl<F: FnOnce(ConfirmChoice, &mut FolderNormalState, &mut LinkDirSet)> Debug
+    for FolderDeleteConfirmState<F>
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_struct("FolderDeleteConfirmState")
+            .field("choice", &self.choice)
+            .field("callback", &"FnOnce(ConfirmChoice)")
+            .finish()
+    }
+}
+
+impl<F> FloatState for FolderDeleteConfirmState<F> where
+    F: FnOnce(ConfirmChoice, &mut FolderNormalState, &mut LinkDirSet)
+{
+}
+
+impl<F> FolderDeleteConfirmState<F>
 where
-    F: FnOnce(ConfirmChoice),
+    F: FnOnce(ConfirmChoice, &mut FolderNormalState, &mut LinkDirSet),
 {
     pub fn new(callback: F) -> Self {
         Self {
@@ -34,9 +59,9 @@ where
         self.choice
     }
 
-    pub fn call(self) {
+    pub fn call(self, state: &mut FolderNormalState, data: &mut LinkDirSet) {
         let function = self.callback;
-        function(self.choice);
+        function(self.choice, state, data);
     }
 
     pub fn switch_chioce(&mut self) {

@@ -2,6 +2,10 @@ use crate::{
     DataTransfer,
     data::{dir::LinkDir, dirset::LinkDirSet},
     ui::{
+        float::{
+            Float,
+            confirm::{ConfirmChoice, FolderDeleteConfirmState},
+        },
         message::{MessageUpdater, NormalFolderMessage, NormalLinkMessage},
         state::{
             AppState, EditPart, FolderEditState, FolderNormalState, LinkEditState, LinkNormalState,
@@ -75,7 +79,7 @@ pub fn folder_switch_up(
         Some(0) => MessageUpdater::new(),
         Some(idx) if idx < data.len() => {
             data.swap(idx, idx - 1);
-            MessageUpdater::new()
+            MessageUpdater::new().with_message(NormalFolderMessage::MoveUp)
         }
         _ => MessageUpdater::new(),
     }
@@ -93,7 +97,7 @@ pub fn folder_switch_down(
         None => MessageUpdater::new().with_message(NormalFolderMessage::Item(0)),
         Some(idx) if idx + 1 < data.len() => {
             data.swap(idx, idx + 1);
-            MessageUpdater::new()
+            MessageUpdater::new().with_message(NormalFolderMessage::MoveDown)
         }
         _ => MessageUpdater::new(),
     }
@@ -136,9 +140,16 @@ pub fn folder_remove(
     }
     match opt_idx {
         Some(idx) if idx < data.len() => {
-            data.remove(idx);
-            state.select(Some(idx.min(data.len().saturating_sub(1))));
-            MessageUpdater::new()
+            let remove = move |choice, state: &mut FolderNormalState, data: &mut LinkDirSet| {
+                if choice == ConfirmChoice::No {
+                    return;
+                }
+                data.remove(idx);
+                state.select(Some(idx.min(data.len().saturating_sub(1))));
+            };
+            MessageUpdater::new().with_float(Float::FolderDeleteConfirm(
+                FolderDeleteConfirmState::new(Box::new(remove)),
+            ))
         }
         _ => MessageUpdater::new(),
     }
@@ -245,7 +256,7 @@ pub fn link_switch_up(
         Some(0) => MessageUpdater::new(),
         Some(idx) if idx < data.len() => {
             data.swap(idx, idx - 1);
-            MessageUpdater::new()
+            MessageUpdater::new().with_message(NormalLinkMessage::MoveUp)
         }
         _ => MessageUpdater::new(),
     }
@@ -263,7 +274,7 @@ pub fn link_switch_down(
         None => MessageUpdater::new().with_message(NormalLinkMessage::Item(0)),
         Some(idx) if idx + 1 < data.len() => {
             data.swap(idx, idx + 1);
-            MessageUpdater::new()
+            MessageUpdater::new().with_message(NormalLinkMessage::MoveDown)
         }
         _ => MessageUpdater::new(),
     }

@@ -2,11 +2,12 @@ use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 
 pub mod edit;
 pub mod normal;
+pub mod float;
 
 use crate::{
     data::{dir::LinkDir, dirset::LinkDirSet},
     ui::{
-        message::{EditMessage, MessageUpdater, NormalFolderMessage, NormalLinkMessage}, state::{
+        float::Float, message::{EditMessage, MessageUpdater, NormalFolderMessage, NormalLinkMessage}, state::{
             AppState, EditPart, FolderEditState, FolderNormalState, InputMode, LinkEditState,
             LinkNormalState, NormalPart,
         }, App
@@ -14,6 +15,13 @@ use crate::{
 };
 
 pub fn handle_key_event(app: &mut App, key: KeyEvent) {
+    match app.float.take() {
+        None => handle_key_event_basic(app, key),
+        Some(float) => handle_key_event_float(app, key, float),
+    }
+}
+
+pub fn handle_key_event_basic(app: &mut App, key: KeyEvent) {
     let mut opt_mod = None;
     let data = &mut app.data;
     let state = &mut app.state;
@@ -24,7 +32,7 @@ pub fn handle_key_event(app: &mut App, key: KeyEvent) {
                 let mut opt_msg = handle_normal_folder_key_event(key);
                 while let Some(msg) = opt_msg {
                     let updater = handle_normal_folder_message(state, data, msg);
-                    (opt_msg, opt_mod) = (updater.message, updater.state);
+                    (opt_msg, opt_mod, app.float) = (updater.message, updater.state, updater.float);
                 }
             }
             NormalPart::Link(state) => {
@@ -32,7 +40,7 @@ pub fn handle_key_event(app: &mut App, key: KeyEvent) {
                 while let Some(msg) = opt_msg {
                     let idx = state.folder_list_state().selected().unwrap();
                     let updater = handle_normal_link_message(state, &mut data[idx], msg);
-                    (opt_msg, opt_mod) = (updater.message, updater.state);
+                    (opt_msg, opt_mod, app.float) = (updater.message, updater.state, updater.float);
                 }
             }
         },
@@ -41,7 +49,7 @@ pub fn handle_key_event(app: &mut App, key: KeyEvent) {
                 let mut opt_msg = handle_edit_folder_key_event(key);
                 while let Some(msg) = opt_msg {
                     let updater = handle_edit_folder_message(state, data, msg);
-                    (opt_msg, opt_mod) = (updater.message, updater.state);
+                    (opt_msg, opt_mod, app.float) = (updater.message, updater.state, updater.float);
                 }
             }
             EditPart::Link(state) => {
@@ -49,7 +57,7 @@ pub fn handle_key_event(app: &mut App, key: KeyEvent) {
                 while let Some(msg) = opt_msg {
                     let idx = state.folder_list_state().selected().unwrap();
                     let updater = handle_edit_link_message(state, &mut data[idx], msg);
-                    (opt_msg, opt_mod) = (updater.message, updater.state);
+                    (opt_msg, opt_mod, app.float) = (updater.message, updater.state, updater.float);
                 }
             }
         },
@@ -60,6 +68,12 @@ pub fn handle_key_event(app: &mut App, key: KeyEvent) {
     if let Some(mod_change) = opt_mod {
         app.state = mod_change;
     }
+}
+
+pub fn handle_key_event_float(app: &mut App, key: KeyEvent, float: Float) {
+    match float {
+        Float::FolderDeleteConfirm(state) => float::handle_folder_delete_confirm_key(app, key, state),
+    };
 }
 
 pub fn handle_normal_folder_key_event(key: KeyEvent) -> Option<NormalFolderMessage> {
@@ -179,7 +193,9 @@ pub fn handle_edit_folder_message(
             EditMessage::Switch => MessageUpdater::new(),
             EditMessage::SwitchLeft => MessageUpdater::new(),
             EditMessage::SwitchRight => MessageUpdater::new(),
-            EditMessage::SwitchOrConfirm => MessageUpdater::new().with_message(EditMessage::Confirm),
+            EditMessage::SwitchOrConfirm => {
+                MessageUpdater::new().with_message(EditMessage::Confirm)
+            }
             EditMessage::Quit(select) => edit::folder_quit_normal(state, data, select),
             EditMessage::Back => MessageUpdater::new(),
         },
@@ -192,7 +208,9 @@ pub fn handle_edit_folder_message(
             EditMessage::Switch => MessageUpdater::new(),
             EditMessage::SwitchLeft => MessageUpdater::new(),
             EditMessage::SwitchRight => MessageUpdater::new(),
-            EditMessage::SwitchOrConfirm => MessageUpdater::new().with_message(EditMessage::Confirm),
+            EditMessage::SwitchOrConfirm => {
+                MessageUpdater::new().with_message(EditMessage::Confirm)
+            }
             EditMessage::Quit(select) => edit::folder_quit_editing(state, data, select),
             EditMessage::Back => edit::folder_back_editing(state, data),
         },

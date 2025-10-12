@@ -7,8 +7,12 @@ use ratatui::widgets::{
 use ratatui::{buffer::Buffer, layout::Rect};
 use tui_input::Input;
 
+use crate::data::dirset::LinkDirSet;
 use crate::ui::App;
-use crate::ui::state::{AppState, FolderEditState, InputMode, InputPart, LinkEditState};
+use crate::ui::float::confirm::{ConfirmChoice, FolderDeleteConfirmState};
+use crate::ui::state::{
+    AppState, FolderEditState, FolderNormalState, InputMode, InputPart, LinkEditState,
+};
 
 pub mod common;
 
@@ -141,7 +145,7 @@ pub fn render_input(
         .style(Style::default().fg(Color::White));
     text.render(chunks[0], buf);
 
-    let width = chunks[1].width.saturating_sub(3);
+    let width = chunks[1].width.saturating_sub(3).max(1);
     let scroll = input.visual_scroll(width as usize);
 
     let style = match input_mode {
@@ -265,4 +269,65 @@ pub fn render_link_edit(
     );
 
     key_pos.or(value_pos)
+}
+
+pub fn render_folder_delete_confirm_float<F>(
+    _state: &FolderDeleteConfirmState<F>, // 以后可能需要
+    area: Rect,
+    buf: &mut Buffer,
+) where
+    F: FnOnce(ConfirmChoice, &mut FolderNormalState, &mut LinkDirSet),
+{
+    let block = Block::bordered()
+        .border_style(Style::default().fg(Color::White))
+        .border_type(BorderType::Rounded)
+        .title_top(
+            Line::from("Confirm")
+                .style(Style::default().fg(Color::Yellow))
+                .centered(),
+        );
+    block.render(area, buf);
+
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .margin(1)
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+        .split(area);
+
+    let hint_message = "Are you sure to DELETE this folder?";
+    let paragraph = Paragraph::new(hint_message)
+        .centered()
+        .wrap(Wrap { trim: false })
+        .style(Color::LightRed)
+        .add_modifier(Modifier::BOLD);
+    paragraph.render(
+        common::vertical_centered_text(hint_message, chunks[0], 0, 0),
+        buf,
+    );
+
+    let choice_areas = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+        .split(chunks[1]);
+
+    let yes_message = "Yes(Y)";
+    let no_message = "No(N)";
+    let yes_paragraph = Paragraph::new(yes_message)
+        .centered()
+        .style(Style::default())
+        .wrap(Wrap { trim: false })
+        .block(Block::bordered().border_type(BorderType::Plain));
+    let no_paragraph = Paragraph::new(no_message)
+        .centered()
+        .style(Style::default())
+        .wrap(Wrap { trim: false })
+        .block(Block::bordered().border_type(BorderType::Plain));
+    yes_paragraph.render(
+        common::vertical_centered_text(yes_message, choice_areas[0], 2, 2),
+        buf,
+    );
+    no_paragraph.render(
+        common::vertical_centered_text(no_message, choice_areas[1], 2, 2),
+        buf,
+    );
 }

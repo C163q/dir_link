@@ -1,4 +1,5 @@
 use ratatui::{layout::Flex, prelude::*};
+use unicode_width::UnicodeWidthStr;
 
 pub fn center(area: Rect, horizontal: Constraint, vertical: Constraint) -> Rect {
     let [area] = Layout::horizontal([horizontal])
@@ -29,4 +30,11 @@ pub fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
             Constraint::Percentage((100 - percent_x) / 2),
         ])
         .split(popup_layout[1])[1] // Return the middle chunk
+}
+
+pub fn vertical_centered_text(text: &str, area: Rect, additional_x: u16, additional_y: u16) -> Rect {
+    let text_width = text.width() as u16;
+    let width = text_width.clamp(1, area.x - additional_x);
+    let height = (text_width - 1) / width + 1;
+    center(area, Constraint::Length(width + additional_x), Constraint::Length(height + additional_y))
 }
