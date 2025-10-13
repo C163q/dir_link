@@ -83,6 +83,11 @@ impl StatefulWidget for &mut App {
                     Clear.render(area, buf);
                     view::render_folder_delete_confirm_float(state, area, buf)
                 }
+                Float::LinkDeleteConfirm(state) => {
+                    let area = view::common::centered_rect(50, 30, area);
+                    Clear.render(area, buf);
+                    view::render_link_delete_confirm_float(state, area, buf)
+                }
             }
         }
     }

@@ -33,6 +33,7 @@ impl LinkNormalState {
         &self.folder_state
     }
 
+
     pub fn table_state_mut(&mut self) -> &mut TableState {
         &mut self.table_state
     }
@@ -43,6 +44,10 @@ impl LinkNormalState {
 
     pub fn folder_list_state_mut(&mut self) -> &mut ListState {
         self.folder_state.list_state_mut()
+    }
+
+    pub fn folder_index(&self) -> usize {
+        self.folder_list_state().selected().unwrap()
     }
 
     pub fn with_selected(from: usize, selected: Option<usize>) -> Self {
@@ -101,6 +106,10 @@ impl LinkEditState {
 
     pub fn state(&self) -> &LinkNormalState {
         &self.state
+    }
+
+    pub fn state_mut(&mut self) -> &mut LinkNormalState {
+        &mut self.state
     }
 
     pub fn table_state(&self) -> &TableState {

@@ -59,6 +59,10 @@ pub enum ConfirmMessage {
     Yes,
     No,
     Quit,
+    Switch,
+    SwitchLeft,
+    SwitchRight,
+    Choose,
 }
 
 impl AppMessage for ConfirmMessage {}

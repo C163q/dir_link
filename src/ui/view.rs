@@ -7,11 +7,12 @@ use ratatui::widgets::{
 use ratatui::{buffer::Buffer, layout::Rect};
 use tui_input::Input;
 
+use crate::data::dir::LinkDir;
 use crate::data::dirset::LinkDirSet;
 use crate::ui::App;
-use crate::ui::float::confirm::{ConfirmChoice, FolderDeleteConfirmState};
+use crate::ui::float::confirm::{ConfirmChoice, FolderDeleteConfirmState, LinkDeleteConfirmState};
 use crate::ui::state::{
-    AppState, FolderEditState, FolderNormalState, InputMode, InputPart, LinkEditState,
+    AppState, FolderEditState, FolderNormalState, InputMode, InputPart, LinkEditState, LinkNormalState,
 };
 
 pub mod common;
@@ -272,12 +273,48 @@ pub fn render_link_edit(
 }
 
 pub fn render_folder_delete_confirm_float<F>(
-    _state: &FolderDeleteConfirmState<F>, // 以后可能需要
+    state: &FolderDeleteConfirmState<F>,
     area: Rect,
     buf: &mut Buffer,
 ) where
     F: FnOnce(ConfirmChoice, &mut FolderNormalState, &mut LinkDirSet),
 {
+    render_conform_border(area, buf);
+
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .margin(1)
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+        .split(area);
+
+    let hint_message = "Are you sure to DELETE this folder?";
+    render_confirm_message(chunks[0], buf, hint_message);
+
+    render_confirm_yes_no_choice(chunks[1], buf, state.choice());
+}
+
+pub fn render_link_delete_confirm_float<F>(
+    state: &LinkDeleteConfirmState<F>,
+    area: Rect,
+    buf: &mut Buffer,
+) where
+    F: FnOnce(ConfirmChoice, &mut LinkNormalState, &mut LinkDir),
+{
+    render_conform_border(area, buf);
+
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .margin(1)
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+        .split(area);
+
+    let hint_message = "Are you sure to DELETE this link?";
+    render_confirm_message(chunks[0], buf, hint_message);
+
+    render_confirm_yes_no_choice(chunks[1], buf, state.choice());
+}
+
+pub fn render_conform_border(area: Rect, buf: &mut Buffer) {
     let block = Block::bordered()
         .border_style(Style::default().fg(Color::White))
         .border_type(BorderType::Rounded)
@@ -287,41 +324,44 @@ pub fn render_folder_delete_confirm_float<F>(
                 .centered(),
         );
     block.render(area, buf);
+}
 
-    let chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .margin(1)
-        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
-        .split(area);
-
-    let hint_message = "Are you sure to DELETE this folder?";
-    let paragraph = Paragraph::new(hint_message)
+pub fn render_confirm_message(area: Rect, buf: &mut Buffer, message: &str) {
+    let paragraph = Paragraph::new(message)
         .centered()
         .wrap(Wrap { trim: false })
         .style(Color::LightRed)
         .add_modifier(Modifier::BOLD);
-    paragraph.render(
-        common::vertical_centered_text(hint_message, chunks[0], 0, 0),
-        buf,
-    );
+    paragraph.render(common::vertical_centered_text(message, area, 0, 0), buf);
+}
 
+pub fn render_confirm_yes_no_choice(area: Rect, buf: &mut Buffer, choice: ConfirmChoice) {
     let choice_areas = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
-        .split(chunks[1]);
+        .split(area);
 
     let yes_message = "Yes(Y)";
     let no_message = "No(N)";
+    let highlight_style = Style::default().fg(Color::Black).bg(Color::Cyan);
+
+    let (yes_style, no_style) = match choice {
+        ConfirmChoice::Yes => (highlight_style, Style::default()),
+        ConfirmChoice::No => (Style::default(), highlight_style),
+    };
+
     let yes_paragraph = Paragraph::new(yes_message)
         .centered()
         .style(Style::default())
         .wrap(Wrap { trim: false })
-        .block(Block::bordered().border_type(BorderType::Plain));
+        .block(Block::bordered().border_type(BorderType::Plain))
+        .style(yes_style);
     let no_paragraph = Paragraph::new(no_message)
         .centered()
         .style(Style::default())
         .wrap(Wrap { trim: false })
-        .block(Block::bordered().border_type(BorderType::Plain));
+        .block(Block::bordered().border_type(BorderType::Plain))
+        .style(no_style);
     yes_paragraph.render(
         common::vertical_centered_text(yes_message, choice_areas[0], 2, 2),
         buf,

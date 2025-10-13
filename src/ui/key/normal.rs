@@ -1,17 +1,14 @@
 use crate::{
-    DataTransfer,
-    data::{dir::LinkDir, dirset::LinkDirSet},
-    ui::{
+    data::{dir::LinkDir, dirset::LinkDirSet}, ui::{
         float::{
-            Float,
-            confirm::{ConfirmChoice, FolderDeleteConfirmState},
+            confirm::{ConfirmChoice, FolderDeleteConfirmState, LinkDeleteConfirmState}, Float
         },
         message::{MessageUpdater, NormalFolderMessage, NormalLinkMessage},
         state::{
             AppState, EditPart, FolderEditState, FolderNormalState, LinkEditState, LinkNormalState,
             NormalPart,
         },
-    },
+    }, DataTransfer
 };
 
 pub fn folder_select(
@@ -318,9 +315,16 @@ pub fn link_remove(
     }
     match opt_idx {
         Some(idx) if idx < data.len() => {
-            data.remove(idx);
-            state.select(Some(idx.min(data.len().saturating_sub(1))));
-            MessageUpdater::new()
+            let remove = move |choice, state: &mut LinkNormalState, data: &mut LinkDir| {
+                if choice == ConfirmChoice::No {
+                    return;
+                }
+                data.remove(idx);
+                state.select(Some(idx.min(data.len().saturating_sub(1))));
+            };
+            MessageUpdater::new().with_float(Float::LinkDeleteConfirm(
+                LinkDeleteConfirmState::new(Box::new(remove), state.folder_index()),
+            ))
         }
         _ => MessageUpdater::new(),
     }
