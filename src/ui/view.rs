@@ -9,6 +9,7 @@ use tui_input::Input;
 
 use crate::data::dir::LinkDir;
 use crate::data::dirset::LinkDirSet;
+use crate::ui::float::warning::WarningState;
 use crate::ui::App;
 use crate::ui::float::confirm::{ConfirmChoice, FolderDeleteConfirmState, LinkDeleteConfirmState};
 use crate::ui::state::{
@@ -370,4 +371,40 @@ pub fn render_confirm_yes_no_choice(area: Rect, buf: &mut Buffer, choice: Confir
         common::vertical_centered_text(no_message, choice_areas[1], 2, 2),
         buf,
     );
+}
+
+pub fn render_warning_float(
+    state: &mut WarningState,
+    area: Rect,
+    buf: &mut Buffer,
+) {
+    let hint_message = "Press <Esc>/<Q> to Quit";
+    let block = Block::bordered()
+        .border_style(Style::default().fg(Color::White))
+        .border_type(BorderType::Rounded)
+        .title_top(
+            Line::from("Warning")
+                .style(Style::default().fg(Color::Yellow))
+                .bold()
+                .centered(),
+        )
+        .title_bottom(
+            Line::from(hint_message)
+                .style(Style::default().fg(Color::LightGreen))
+                .centered(),
+        );
+    block.render(area, buf);
+
+    let chunk = Layout::default()
+        .margin(1)
+        .constraints([Constraint::Min(0)])
+        .split(area)[0];
+
+    let message = state.message();
+    let paragraph = Paragraph::new(message)
+        .centered()
+        .wrap(Wrap { trim: false })
+        .style(Color::LightRed)
+        .add_modifier(Modifier::BOLD);
+    paragraph.render(common::vertical_centered_text(message, chunk, 0, 0), buf);
 }

@@ -67,6 +67,13 @@ pub enum ConfirmMessage {
 
 impl AppMessage for ConfirmMessage {}
 
+#[derive(Debug, PartialEq, Eq)]
+pub enum WarningMessage {
+    Quit,
+}
+
+impl AppMessage for WarningMessage {}
+
 #[derive(Debug)]
 pub struct MessageUpdater<M: AppMessage> {
     pub message: Option<M>,
@@ -108,6 +115,7 @@ impl<M: AppMessage> MessageUpdater<M> {
 pub struct FloatUpdater<M: AppMessage, S: FloatState> {
     pub message: Option<M>,
     pub state: Option<S>,
+    pub float: Option<Float>,
 }
 
 impl<M: AppMessage, S: FloatState> Default for FloatUpdater<M, S> {
@@ -121,6 +129,7 @@ impl<M: AppMessage, S: FloatState> FloatUpdater<M, S> {
         Self {
             message: None,
             state: None,
+            float: None,
         }
     }
 
@@ -131,6 +140,11 @@ impl<M: AppMessage, S: FloatState> FloatUpdater<M, S> {
 
     pub fn with_state(mut self, state: S) -> Self {
         self.state = Some(state);
+        self
+    }
+
+    pub fn with_float(mut self, float: Float) -> Self {
+        self.float = Some(float);
         self
     }
 }

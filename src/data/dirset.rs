@@ -29,7 +29,7 @@ impl LinkDirSet {
         if self.set.contains(dir.identifier()) {
             return Err(Error::new(
                 ErrorKind::DuplicatedLinkDirIdentifier(dir),
-                "same identifer already exists",
+                "Directory name already exists",
             ));
         }
         self.set.insert(dir.identifier().to_string());
@@ -51,7 +51,7 @@ impl LinkDirSet {
         if self.set.contains(identifier) {
             return Err(Error::new(
                 ErrorKind::DuplicatedIdentifier,
-                "same identifer already exists",
+                "Directory name already exists",
             ));
         }
         let dir = &mut self.map[idx];

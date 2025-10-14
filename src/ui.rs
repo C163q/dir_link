@@ -6,23 +6,23 @@ use ratatui::widgets::{Clear, ListState, TableState, Widget};
 
 use state::AppState;
 
+use crate::DataTransfer;
 use crate::data::dirset::LinkDirSet;
 use crate::debug::Debugger;
 use crate::ui::float::Float;
 use crate::ui::state::EditPart;
-use crate::DataTransfer;
 use state::{FolderNormalState, NormalPart};
 
+pub mod float;
 pub mod key;
 pub mod message;
 pub mod state;
 pub mod view;
-pub mod float;
 
 pub struct App {
     state: AppState,
     data: LinkDirSet,
-    float: Option<Float>,
+    float: Vec<Float>,
 }
 
 pub struct AppData {
@@ -76,7 +76,7 @@ impl StatefulWidget for &mut App {
             AppState::Normal(_) => {}
         }
 
-        if let Some(float) = &mut self.float {
+        if let Some(float) = &mut self.float.last_mut() {
             match float {
                 Float::FolderDeleteConfirm(state) => {
                     let area = view::common::centered_rect(50, 30, area);
@@ -88,6 +88,11 @@ impl StatefulWidget for &mut App {
                     Clear.render(area, buf);
                     view::render_link_delete_confirm_float(state, area, buf)
                 }
+                Float::Warning(state) => {
+                    let area = view::common::centered_rect(40, 25, area);
+                    Clear.render(area, buf);
+                    view::render_warning_float(state, area, buf);
+                }
             }
         }
     }
@@ -98,7 +103,7 @@ impl App {
         Self {
             state: AppState::Normal(Box::new(NormalPart::Folder(FolderNormalState::new()))),
             data,
-            float: None,
+            float: Vec::new(),
         }
     }
 
@@ -106,7 +111,7 @@ impl App {
         mut self,
         mut terminal: Terminal<B>,
         success: bool,
-        mut data_transfer: DataTransfer
+        mut data_transfer: DataTransfer,
     ) -> io::Result<(DataTransfer, LinkDirSet)> {
         loop {
             terminal.draw(|f| {
@@ -125,7 +130,7 @@ impl App {
                 data_transfer.link = data.link.take();
                 break;
             }
-        };
+        }
         Ok((data_transfer, self.data))
     }
 

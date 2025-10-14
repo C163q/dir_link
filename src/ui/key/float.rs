@@ -4,8 +4,8 @@ use crate::{
     data::{dir::LinkDir, dirset::LinkDirSet},
     ui::{
         float::{
-            confirm::{ConfirmChoice, FolderDeleteConfirmState, LinkDeleteConfirmState}, Float, FolderDeleteConfirmCallbackType, LinkDeleteConfirmCallbackType
-        }, message::{ConfirmMessage, FloatUpdater}, state::{AppState, EditPart, NormalPart}, App
+            confirm::{ConfirmChoice, FolderDeleteConfirmState, LinkDeleteConfirmState}, warning::WarningState, Float, FloatActionResult, FolderDeleteConfirmCallbackType, LinkDeleteConfirmCallbackType
+        }, message::{ConfirmMessage, FloatUpdater, WarningMessage}, state::{AppState, EditPart, NormalPart}, App
     },
 };
 
@@ -13,17 +13,17 @@ pub fn handle_folder_delete_confirm_key(
     app: &mut App,
     key: KeyEvent,
     mut state: FolderDeleteConfirmState<FolderDeleteConfirmCallbackType>,
-) -> Option<Float> {
+) -> FloatActionResult {
     let mut opt_msg = folder_delete_confirm_key(key);
     while let Some(msg) = opt_msg {
         let updater = folder_delete_confirm_message(app, state, msg);
         opt_msg = updater.message;
         match updater.state {
             Some(s) => state = s,
-            None => return None,
+            None => return FloatActionResult::new(),
         }
     }
-    Some(Float::FolderDeleteConfirm(state))
+    FloatActionResult::new().with_primary(Float::FolderDeleteConfirm(state))
 }
 
 pub fn folder_delete_confirm_key(key: KeyEvent) -> Option<ConfirmMessage> {
@@ -105,7 +105,7 @@ pub fn handle_link_delete_confirm_key(
     app: &mut App,
     key: KeyEvent,
     mut state: LinkDeleteConfirmState<LinkDeleteConfirmCallbackType>,
-) -> Option<Float> {
+) -> FloatActionResult {
     // 它们的按键逻辑是一样的
     let mut opt_msg = folder_delete_confirm_key(key);
     while let Some(msg) = opt_msg {
@@ -113,10 +113,10 @@ pub fn handle_link_delete_confirm_key(
         opt_msg = updater.message;
         match updater.state {
             Some(s) => state = s,
-            None => return None,
+            None => return FloatActionResult::new(),
         }
     }
-    Some(Float::LinkDeleteConfirm(state))
+    FloatActionResult::new().with_primary(Float::LinkDeleteConfirm(state))
 }
 
 pub fn link_delete_confirm_message(
@@ -174,5 +174,43 @@ pub fn link_delete_confirm_call(
             _ => FloatUpdater::new(),
         },
         _ => FloatUpdater::new(),
+    }
+}
+
+pub fn handle_warning_key(
+    app: &mut App,
+    key: KeyEvent,
+    mut state: WarningState,
+) -> FloatActionResult {
+    let mut opt_msg = warning_key(key);
+    while let Some(msg) = opt_msg {
+        let updater = warning_message(app, state, msg);
+        opt_msg = updater.message;
+        match updater.state {
+            Some(s) => state = s,
+            None => return FloatActionResult::new(),
+        }
+    }
+    FloatActionResult::new().with_primary(Float::Warning(state))
+}
+
+pub fn warning_key(key: KeyEvent) -> Option<WarningMessage> {
+    if key.kind == KeyEventKind::Press {
+        match key.code {
+            KeyCode::Esc | KeyCode::Char('q') | KeyCode::Char('Q') => Some(WarningMessage::Quit),
+            _ => None,
+        }
+    } else {
+        None
+    }
+}
+
+pub fn warning_message(
+    _app: &mut App,
+    _state: WarningState,
+    message: WarningMessage,
+) -> FloatUpdater<WarningMessage, WarningState> {
+    match message {
+        WarningMessage::Quit => FloatUpdater::new(),
     }
 }

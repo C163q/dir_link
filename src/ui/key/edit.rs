@@ -10,28 +10,32 @@ use crate::{
         link::{self, Link},
     },
     ui::{
-        message::{EditMessage, MessageUpdater},
-        state::{
+        float::{warning::WarningState, Float}, message::{EditMessage, MessageUpdater}, state::{
             AppState, FolderEditState, FolderNormalState, InputPart, LinkEditState,
             LinkNormalState, NormalPart,
-        },
+        }
     },
 };
 
 pub fn folder_handle_input_normal(
     state: &mut FolderEditState,
-    _data: &mut LinkDirSet,
+    data: &mut LinkDirSet,
     key_event: KeyEvent,
 ) -> MessageUpdater<EditMessage> {
     let select = state.list_state().selected();
+    let quit_select = if data.is_empty() {
+        select
+    } else {
+        select.or(Some(0))
+    };
     if key_event.kind == KeyEventKind::Press {
         match (key_event.modifiers, key_event.code) {
             (KeyModifiers::CONTROL, KeyCode::Char('c') | KeyCode::Char('C')) => {
-                MessageUpdater::new().with_message(EditMessage::Quit(select))
+                MessageUpdater::new().with_message(EditMessage::Quit(quit_select))
             }
             (_, code) => match code {
                 KeyCode::Esc | KeyCode::Char('q') => {
-                    MessageUpdater::new().with_message(EditMessage::Quit(select))
+                    MessageUpdater::new().with_message(EditMessage::Quit(quit_select))
                 }
                 KeyCode::Enter => MessageUpdater::new().with_message(EditMessage::Confirm),
                 KeyCode::Char('a') | KeyCode::Char('e') => {
@@ -65,17 +69,33 @@ pub fn folder_confirm_normal(
             let dir = match build_dir {
                 Ok(dir) => dir,
                 // TODO: handle Err later (identifier empty)
-                Err(_) => return MessageUpdater::new().with_message(EditMessage::Quit(Some(0))),
+                Err(err) => {
+                    let msg = err.message().to_owned();
+                    return MessageUpdater::new().with_float(Float::Warning(WarningState::new(msg)));
+                }
             };
             // TODO: handle Err later (identifier already exists)
-            data.push(dir);
-            Some(data.len().saturating_sub(1))
+            match data.push(dir) {
+                Ok(_) => Some(data.len().saturating_sub(1)),
+                Err(err) => {
+                    let msg = err.message().to_owned();
+                    return MessageUpdater::new()
+                        .with_float(Float::Warning(WarningState::new(msg)));
+                }
+            }
         }
         Some(idx) => {
             // rename
             if name != data[idx].identifier() {
                 // TODO: handle Err later (identifier empty or already exists)
-                data.rename(idx, name);
+                match data.rename(idx, name) {
+                    Ok(_) => {}
+                    Err(err) => {
+                        let msg = err.message().to_owned();
+                        return MessageUpdater::new()
+                            .with_float(Float::Warning(WarningState::new(msg)));
+                    }
+                }
             }
             Some(idx)
         }
@@ -154,18 +174,23 @@ pub fn folder_back_editing(
 
 pub fn link_handle_input_normal(
     state: &mut LinkEditState,
-    _data: &mut LinkDir,
+    data: &mut LinkDir,
     key_event: KeyEvent,
 ) -> MessageUpdater<EditMessage> {
     let select = state.table_state().selected();
+    let quit_select = if data.is_empty() {
+        select
+    } else {
+        select.or(Some(0))
+    };
     if key_event.kind == KeyEventKind::Press {
         match (key_event.modifiers, key_event.code) {
             (KeyModifiers::CONTROL, KeyCode::Char('c') | KeyCode::Char('C')) => {
-                MessageUpdater::new().with_message(EditMessage::Quit(select))
+                MessageUpdater::new().with_message(EditMessage::Quit(quit_select))
             }
             (_, code) => match code {
                 KeyCode::Esc | KeyCode::Char('q') => {
-                    MessageUpdater::new().with_message(EditMessage::Quit(select))
+                    MessageUpdater::new().with_message(EditMessage::Quit(quit_select))
                 }
                 KeyCode::Enter => MessageUpdater::new().with_message(EditMessage::Confirm),
                 KeyCode::Char('a') | KeyCode::Char('e') => {

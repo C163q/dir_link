@@ -1,21 +1,24 @@
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 
 pub mod edit;
-pub mod normal;
 pub mod float;
+pub mod normal;
 
 use crate::{
     data::{dir::LinkDir, dirset::LinkDirSet},
     ui::{
-        float::Float, message::{EditMessage, MessageUpdater, NormalFolderMessage, NormalLinkMessage}, state::{
+        App,
+        float::Float,
+        message::{EditMessage, MessageUpdater, NormalFolderMessage, NormalLinkMessage},
+        state::{
             AppState, EditPart, FolderEditState, FolderNormalState, InputMode, LinkEditState,
             LinkNormalState, NormalPart,
-        }, App
+        },
     },
 };
 
 pub fn handle_key_event(app: &mut App, key: KeyEvent) {
-    match app.float.take() {
+    match app.float.pop() {
         None => handle_key_event_basic(app, key),
         Some(float) => handle_key_event_float(app, key, float),
     }
@@ -25,6 +28,7 @@ pub fn handle_key_event_basic(app: &mut App, key: KeyEvent) {
     let mut opt_mod = None;
     let data = &mut app.data;
     let state = &mut app.state;
+    let mut float = None;
 
     match state {
         AppState::Normal(part) => match &mut **part {
@@ -32,7 +36,7 @@ pub fn handle_key_event_basic(app: &mut App, key: KeyEvent) {
                 let mut opt_msg = handle_normal_folder_key_event(key);
                 while let Some(msg) = opt_msg {
                     let updater = handle_normal_folder_message(state, data, msg);
-                    (opt_msg, opt_mod, app.float) = (updater.message, updater.state, updater.float);
+                    (opt_msg, opt_mod, float) = (updater.message, updater.state, updater.float);
                 }
             }
             NormalPart::Link(state) => {
@@ -40,7 +44,7 @@ pub fn handle_key_event_basic(app: &mut App, key: KeyEvent) {
                 while let Some(msg) = opt_msg {
                     let idx = state.folder_list_state().selected().unwrap();
                     let updater = handle_normal_link_message(state, &mut data[idx], msg);
-                    (opt_msg, opt_mod, app.float) = (updater.message, updater.state, updater.float);
+                    (opt_msg, opt_mod, float) = (updater.message, updater.state, updater.float);
                 }
             }
         },
@@ -49,7 +53,7 @@ pub fn handle_key_event_basic(app: &mut App, key: KeyEvent) {
                 let mut opt_msg = handle_edit_folder_key_event(key);
                 while let Some(msg) = opt_msg {
                     let updater = handle_edit_folder_message(state, data, msg);
-                    (opt_msg, opt_mod, app.float) = (updater.message, updater.state, updater.float);
+                    (opt_msg, opt_mod, float) = (updater.message, updater.state, updater.float);
                 }
             }
             EditPart::Link(state) => {
@@ -57,7 +61,7 @@ pub fn handle_key_event_basic(app: &mut App, key: KeyEvent) {
                 while let Some(msg) = opt_msg {
                     let idx = state.folder_list_state().selected().unwrap();
                     let updater = handle_edit_link_message(state, &mut data[idx], msg);
-                    (opt_msg, opt_mod, app.float) = (updater.message, updater.state, updater.float);
+                    (opt_msg, opt_mod, float) = (updater.message, updater.state, updater.float);
                 }
             }
         },
@@ -68,17 +72,20 @@ pub fn handle_key_event_basic(app: &mut App, key: KeyEvent) {
     if let Some(mod_change) = opt_mod {
         app.state = mod_change;
     }
+    if let Some(f) = float {
+        app.float.push(f);
+    }
 }
 
 pub fn handle_key_event_float(app: &mut App, key: KeyEvent, float: Float) {
-    match float {
+    let float_action = match float {
         Float::FolderDeleteConfirm(state) => {
-            app.float = float::handle_folder_delete_confirm_key(app, key, state);
-        },
-        Float::LinkDeleteConfirm(state) => {
-            app.float = float::handle_link_delete_confirm_key(app, key, state);
+            float::handle_folder_delete_confirm_key(app, key, state)
         }
+        Float::LinkDeleteConfirm(state) => float::handle_link_delete_confirm_key(app, key, state),
+        Float::Warning(state) => float::handle_warning_key(app, key, state),
     };
+    app.float.extend(float_action);
 }
 
 pub fn handle_normal_folder_key_event(key: KeyEvent) -> Option<NormalFolderMessage> {

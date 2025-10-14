@@ -22,7 +22,7 @@ impl LinkDir {
         if identifier.is_empty() {
             return Err(Error::new(
                 ErrorKind::InvaildIdentifier,
-                "identifier is empty",
+                "Link name is empty",
             ));
         }
         Ok(Self {
@@ -40,7 +40,7 @@ impl LinkDir {
         if identifier.is_empty() {
             return Err(Error::new(
                 ErrorKind::InvaildIdentifier,
-                "identifier is empty",
+                "Link name is empty",
             ));
         }
         self.identifier = identifier.to_string();
@@ -59,7 +59,7 @@ impl LinkDir {
         if self.set.contains(link.identifier()) {
             return Err(Error::new(
                 ErrorKind::DuplicatedLinkIdentifier(link),
-                "same identifier already exists",
+                "Same link name already exists",
             ));
         }
         self.set.insert(link.identifier().to_string());
@@ -81,7 +81,7 @@ impl LinkDir {
         if self.set.contains(identifier) {
             return Err(Error::new(
                 ErrorKind::DuplicatedIdentifier,
-                "same identifier already exists",
+                "Same link name already exists",
             ));
         }
         let link = &mut self.map[idx];
