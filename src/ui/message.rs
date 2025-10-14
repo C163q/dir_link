@@ -1,6 +1,9 @@
 use ratatui::crossterm::event::KeyEvent;
 
-use crate::ui::{float::{Float, FloatState}, state::AppState};
+use crate::ui::{
+    float::Float,
+    state::{AppState, FloatState},
+};
 
 pub trait AppMessage {}
 
@@ -78,7 +81,7 @@ impl AppMessage for WarningMessage {}
 pub struct MessageUpdater<M: AppMessage> {
     pub message: Option<M>,
     pub state: Option<AppState>,
-    pub float: Option<Float>
+    pub float: Option<Float>,
 }
 
 impl Default for MessageUpdater<NormalFolderMessage> {

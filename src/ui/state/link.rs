@@ -21,7 +21,6 @@ impl LinkNormalState {
         &self.folder_state
     }
 
-
     pub fn table_state_mut(&mut self) -> &mut TableState {
         &mut self.table_state
     }

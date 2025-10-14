@@ -8,7 +8,6 @@ use state::AppState;
 
 use crate::DataTransfer;
 use crate::data::dirset::LinkDirSet;
-use crate::debug::Debugger;
 use crate::ui::float::Float;
 use state::{FolderNormalState, NormalState};
 

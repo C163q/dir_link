@@ -2,13 +2,13 @@ use crate::{
     DataTransfer,
     data::{dir::LinkDir, dirset::LinkDirSet},
     ui::{
-        float::{
-            Float,
+        float::Float,
+        message::{MessageUpdater, NormalFolderMessage, NormalLinkMessage},
+        state::{
+            AppState, FolderNormalState, LinkNormalState, NormalState,
             confirm::{ConfirmChoice, FolderDeleteConfirmState, LinkDeleteConfirmState},
             edit::{FolderEditState, LinkEditState},
         },
-        message::{MessageUpdater, NormalFolderMessage, NormalLinkMessage},
-        state::{AppState, FolderNormalState, LinkNormalState, NormalState},
     },
 };
 

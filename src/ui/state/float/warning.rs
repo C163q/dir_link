@@ -1,4 +1,4 @@
-use crate::ui::float::FloatState;
+use crate::ui::state::FloatState;
 
 #[derive(Debug, Clone)]
 pub struct WarningState {

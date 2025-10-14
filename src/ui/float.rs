@@ -2,15 +2,13 @@ use std::{array, iter::Flatten};
 
 use crate::{
     data::{dir::LinkDir, dirset::LinkDirSet},
-    ui::{
-        float::{confirm::{ConfirmChoice, FolderDeleteConfirmState, LinkDeleteConfirmState}, edit::{FolderEditState, LinkEditState}, warning::WarningState},
-        state::{FolderNormalState, LinkNormalState},
+    ui::state::{
+        FolderNormalState, LinkNormalState,
+        confirm::{ConfirmChoice, FolderDeleteConfirmState, LinkDeleteConfirmState},
+        edit::{FolderEditState, LinkEditState},
+        warning::WarningState,
     },
 };
-
-pub mod confirm;
-pub mod warning;
-pub mod edit;
 
 pub type FolderDeleteConfirmCallbackType =
     Box<dyn FnOnce(ConfirmChoice, &mut FolderNormalState, &mut LinkDirSet)>;
@@ -25,8 +23,6 @@ pub enum Float {
     LinkDeleteConfirm(LinkDeleteConfirmState<LinkDeleteConfirmCallbackType>),
     Warning(WarningState),
 }
-
-pub trait FloatState {}
 
 #[derive(Debug)]
 pub struct FloatActionResult {

@@ -103,10 +103,7 @@ pub fn run_app<B: Backend>(
             let mut file = BufWriter::new(File::create(data_path)?);
             file.write_all(serde_json::to_vec(&data.1)?.as_slice())?;
             if let Some(link) = data.0.link() {
-                output_result(
-                    link.path().as_os_str().as_encoded_bytes(),
-                    path.as_ref(),
-                )?;
+                output_result(link.path().as_os_str().as_encoded_bytes(), path.as_ref())?;
             }
             Ok(())
         }

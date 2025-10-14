@@ -1,20 +1,21 @@
 mod common;
+mod float;
 mod folder;
 mod link;
 
 pub use common::*;
+pub use float::*;
 pub use folder::*;
 pub use link::*;
 use ratatui::widgets::{ListState, TableState};
 
-use crate::{DataTransfer};
+use crate::DataTransfer;
 
 #[derive(Debug)]
 pub enum NormalState {
     Folder(FolderNormalState),
     Link(LinkNormalState),
 }
-
 
 #[derive(Debug)]
 pub enum AppState {

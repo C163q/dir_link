@@ -10,13 +10,13 @@ use crate::{
     },
     ui::{
         App,
-        float::{
-            Float, FloatActionResult,
+        float::{Float, FloatActionResult},
+        message::{EditMessage, FloatUpdater},
+        state::{
+            AppState, FolderNormalState, InputMode, InputPart, LinkNormalState, NormalState,
             edit::{FolderEditState, LinkEditState},
             warning::WarningState,
         },
-        message::{EditMessage, FloatUpdater},
-        state::{AppState, FolderNormalState, InputMode, InputPart, LinkNormalState, NormalState},
     },
 };
 

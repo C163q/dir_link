@@ -9,12 +9,12 @@ use tui_input::Input;
 
 use crate::data::dir::LinkDir;
 use crate::data::dirset::LinkDirSet;
-use crate::ui::float::edit::{FolderEditState, LinkEditState};
-use crate::ui::float::warning::WarningState;
 use crate::ui::App;
-use crate::ui::float::confirm::{ConfirmChoice, FolderDeleteConfirmState, LinkDeleteConfirmState};
 use crate::ui::state::{
     FolderNormalState, InputMode, InputPart, LinkNormalState,
+    confirm::{ConfirmChoice, FolderDeleteConfirmState, LinkDeleteConfirmState},
+    edit::{FolderEditState, LinkEditState},
+    warning::WarningState,
 };
 
 pub mod common;
@@ -367,11 +367,7 @@ pub fn render_confirm_yes_no_choice(area: Rect, buf: &mut Buffer, choice: Confir
     );
 }
 
-pub fn render_warning_float(
-    state: &mut WarningState,
-    area: Rect,
-    buf: &mut Buffer,
-) {
+pub fn render_warning_float(state: &mut WarningState, area: Rect, buf: &mut Buffer) {
     let hint_message = "Press <Esc>/<Q> to Quit";
     let block = Block::bordered()
         .border_style(Style::default().fg(Color::White))

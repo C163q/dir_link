@@ -3,9 +3,17 @@ use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyEventKind};
 use crate::{
     data::{dir::LinkDir, dirset::LinkDirSet},
     ui::{
+        App,
         float::{
-            confirm::{ConfirmChoice, FolderDeleteConfirmState, LinkDeleteConfirmState}, warning::WarningState, Float, FloatActionResult, FolderDeleteConfirmCallbackType, LinkDeleteConfirmCallbackType
-        }, message::{ConfirmMessage, FloatUpdater, WarningMessage}, state::{AppState, NormalState}, App
+            Float, FloatActionResult, FolderDeleteConfirmCallbackType,
+            LinkDeleteConfirmCallbackType,
+        },
+        message::{ConfirmMessage, FloatUpdater, WarningMessage},
+        state::{
+            AppState, NormalState,
+            confirm::{ConfirmChoice, FolderDeleteConfirmState, LinkDeleteConfirmState},
+            warning::WarningState,
+        },
     },
 };
 
@@ -117,12 +125,18 @@ pub fn link_delete_confirm_message(
     message: ConfirmMessage,
 ) -> FloatUpdater<ConfirmMessage, LinkDeleteConfirmState<LinkDeleteConfirmCallbackType>> {
     match message {
-        ConfirmMessage::Yes => {
-            link_delete_confirm_call(&mut app.state, &mut app.data[state.dir_idx()], state, ConfirmChoice::Yes)
-        }
-        ConfirmMessage::No | ConfirmMessage::Quit => {
-            link_delete_confirm_call(&mut app.state, &mut app.data[state.dir_idx()], state, ConfirmChoice::No)
-        }
+        ConfirmMessage::Yes => link_delete_confirm_call(
+            &mut app.state,
+            &mut app.data[state.dir_idx()],
+            state,
+            ConfirmChoice::Yes,
+        ),
+        ConfirmMessage::No | ConfirmMessage::Quit => link_delete_confirm_call(
+            &mut app.state,
+            &mut app.data[state.dir_idx()],
+            state,
+            ConfirmChoice::No,
+        ),
         ConfirmMessage::SwitchLeft => {
             state.change_choice(ConfirmChoice::Yes);
             FloatUpdater::new().with_state(state)
@@ -137,7 +151,12 @@ pub fn link_delete_confirm_message(
         }
         ConfirmMessage::Choose => {
             let choice = state.choice();
-            link_delete_confirm_call(&mut app.state, &mut app.data[state.dir_idx()], state, choice)
+            link_delete_confirm_call(
+                &mut app.state,
+                &mut app.data[state.dir_idx()],
+                state,
+                choice,
+            )
         }
     }
 }
@@ -156,7 +175,7 @@ pub fn link_delete_confirm_call(
                 FloatUpdater::new()
             }
             _ => FloatUpdater::new(),
-        }
+        },
         _ => FloatUpdater::new(),
     }
 }

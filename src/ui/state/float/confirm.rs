@@ -3,10 +3,7 @@ use std::fmt::{Debug, Formatter};
 
 use crate::{
     data::{dir::LinkDir, dirset::LinkDirSet},
-    ui::{
-        float::FloatState,
-        state::{FolderNormalState, LinkNormalState},
-    },
+    ui::state::{FloatState, FolderNormalState, LinkNormalState},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
