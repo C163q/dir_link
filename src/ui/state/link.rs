@@ -1,23 +1,11 @@
-use std::ffi::OsStr;
-
-use super::{InputMode, InputPart};
 use crate::ui::state::FolderNormalState;
 
 use ratatui::widgets::{ListState, TableState};
-use tui_input::Input;
 
 #[derive(Debug)]
 pub struct LinkNormalState {
     folder_state: FolderNormalState,
     table_state: TableState,
-}
-
-#[derive(Debug)]
-pub struct LinkEditState {
-    state: LinkNormalState,
-    mode: InputMode,
-    part: InputPart,
-    input: (Input, Input),
 }
 
 impl LinkNormalState {
@@ -60,93 +48,5 @@ impl LinkNormalState {
 
     pub fn select(&mut self, selected: Option<usize>) {
         self.table_state.select(selected);
-    }
-}
-
-impl LinkEditState {
-    pub fn new(from: usize, selected: Option<usize>) -> Self {
-        Self {
-            state: LinkNormalState::with_selected(from, selected),
-            mode: InputMode::Editing,
-            part: InputPart::Key,
-            input: (Input::default(), Input::default()),
-        }
-    }
-
-    pub fn mode(&self) -> &InputMode {
-        &self.mode
-    }
-
-    pub fn switch_mode(&mut self) {
-        self.mode = match self.mode {
-            InputMode::Normal => InputMode::Editing,
-            InputMode::Editing => InputMode::Normal,
-        }
-    }
-
-    pub fn value(&self) -> (&str, &str) {
-        (self.input.0.value(), self.input.1.value())
-    }
-
-    pub fn key_input(&self) -> &Input {
-        &self.input.0
-    }
-
-    pub fn key_input_mut(&mut self) -> &mut Input {
-        &mut self.input.0
-    }
-
-    pub fn value_input(&self) -> &Input {
-        &self.input.1
-    }
-
-    pub fn value_input_mut(&mut self) -> &mut Input {
-        &mut self.input.1
-    }
-
-    pub fn state(&self) -> &LinkNormalState {
-        &self.state
-    }
-
-    pub fn state_mut(&mut self) -> &mut LinkNormalState {
-        &mut self.state
-    }
-
-    pub fn table_state(&self) -> &TableState {
-        self.state.table_state()
-    }
-
-    pub fn table_state_mut(&mut self) -> &mut TableState {
-        self.state.table_state_mut()
-    }
-
-    pub fn folder_list_state(&self) -> &ListState {
-        self.state.folder_list_state()
-    }
-
-    pub fn folder_list_state_mut(&mut self) -> &mut ListState {
-        self.state.folder_list_state_mut()
-    }
-
-    pub fn part(&self) -> &InputPart {
-        &self.part
-    }
-
-    pub fn switch_part(&mut self) {
-        self.part = match self.part {
-            InputPart::Key => InputPart::Value,
-            InputPart::Value => InputPart::Key,
-        }
-    }
-
-    pub fn set_part(&mut self, part: InputPart) {
-        self.part = part;
-    }
-
-    pub fn with_value(mut self, key: &str, value: &OsStr) -> Self {
-        let key_input = Input::new(key.to_string());
-        let value_input = Input::new(value.to_string_lossy().to_string());
-        self.input = (key_input, value_input);
-        self
     }
 }

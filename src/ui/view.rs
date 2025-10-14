@@ -9,25 +9,19 @@ use tui_input::Input;
 
 use crate::data::dir::LinkDir;
 use crate::data::dirset::LinkDirSet;
+use crate::ui::float::edit::{FolderEditState, LinkEditState};
 use crate::ui::float::warning::WarningState;
 use crate::ui::App;
 use crate::ui::float::confirm::{ConfirmChoice, FolderDeleteConfirmState, LinkDeleteConfirmState};
 use crate::ui::state::{
-    AppState, FolderEditState, FolderNormalState, InputMode, InputPart, LinkEditState, LinkNormalState,
+    FolderNormalState, InputMode, InputPart, LinkNormalState,
 };
 
 pub mod common;
 
-pub fn render_border(app: &App, area: Rect, buf: &mut Buffer) {
-    let state_hint = match &app.state {
-        AppState::Normal(_) => "normal",
-        AppState::Edit(_) => "edit",
-        AppState::Quit(_) => "quit",
-    };
-
+pub fn render_border(area: Rect, buf: &mut Buffer) {
     let block = Block::bordered()
         .title_top(Line::styled("Dir Link", Style::default().fg(Color::Yellow)).left_aligned())
-        .title_bottom(Line::styled(state_hint, Style::default().fg(Color::Green)).right_aligned())
         .border_type(BorderType::Rounded)
         .border_style(Style::default().fg(Color::White));
     block.render(area, buf);
@@ -214,7 +208,7 @@ pub fn render_folder_edit(
     area: Rect,
     buf: &mut Buffer,
 ) -> Option<(u16, u16)> {
-    render_input_block(state.list_state().selected(), state.mode(), area, buf);
+    render_input_block(state.selected(), state.mode(), area, buf);
 
     let mode = state.mode().to_owned();
     let chunk = Layout::default()
@@ -237,7 +231,7 @@ pub fn render_link_edit(
     area: Rect,
     buf: &mut Buffer,
 ) -> Option<(u16, u16)> {
-    render_input_block(state.table_state().selected(), state.mode(), area, buf);
+    render_input_block(state.selected(), state.mode(), area, buf);
 
     let mode = state.mode().to_owned();
     let key_mode = match state.part() {

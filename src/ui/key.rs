@@ -10,10 +10,7 @@ use crate::{
         App,
         float::Float,
         message::{EditMessage, MessageUpdater, NormalFolderMessage, NormalLinkMessage},
-        state::{
-            AppState, EditPart, FolderEditState, FolderNormalState, InputMode, LinkEditState,
-            LinkNormalState, NormalPart,
-        },
+        state::{AppState, FolderNormalState, LinkNormalState, NormalState},
     },
 };
 
@@ -32,35 +29,18 @@ pub fn handle_key_event_basic(app: &mut App, key: KeyEvent) {
 
     match state {
         AppState::Normal(part) => match &mut **part {
-            NormalPart::Folder(state) => {
+            NormalState::Folder(state) => {
                 let mut opt_msg = handle_normal_folder_key_event(key);
                 while let Some(msg) = opt_msg {
                     let updater = handle_normal_folder_message(state, data, msg);
                     (opt_msg, opt_mod, float) = (updater.message, updater.state, updater.float);
                 }
             }
-            NormalPart::Link(state) => {
+            NormalState::Link(state) => {
                 let mut opt_msg = handle_normal_link_key_event(key);
                 while let Some(msg) = opt_msg {
                     let idx = state.folder_list_state().selected().unwrap();
                     let updater = handle_normal_link_message(state, &mut data[idx], msg);
-                    (opt_msg, opt_mod, float) = (updater.message, updater.state, updater.float);
-                }
-            }
-        },
-        AppState::Edit(part) => match &mut **part {
-            EditPart::Folder(state) => {
-                let mut opt_msg = handle_edit_folder_key_event(key);
-                while let Some(msg) = opt_msg {
-                    let updater = handle_edit_folder_message(state, data, msg);
-                    (opt_msg, opt_mod, float) = (updater.message, updater.state, updater.float);
-                }
-            }
-            EditPart::Link(state) => {
-                let mut opt_msg = handle_edit_link_key_event(key);
-                while let Some(msg) = opt_msg {
-                    let idx = state.folder_list_state().selected().unwrap();
-                    let updater = handle_edit_link_message(state, &mut data[idx], msg);
                     (opt_msg, opt_mod, float) = (updater.message, updater.state, updater.float);
                 }
             }
@@ -79,6 +59,8 @@ pub fn handle_key_event_basic(app: &mut App, key: KeyEvent) {
 
 pub fn handle_key_event_float(app: &mut App, key: KeyEvent, float: Float) {
     let float_action = match float {
+        Float::FolderEdit(state) => edit::handle_edit_folder_key(app, key, state),
+        Float::LinkEdit(state) => edit::handle_edit_link_key(app, key, state),
         Float::FolderDeleteConfirm(state) => {
             float::handle_folder_delete_confirm_key(app, key, state)
         }
@@ -187,79 +169,5 @@ pub fn handle_normal_link_message(
         NormalLinkMessage::Quit => normal::link_quit(),
         NormalLinkMessage::Item(idx) => normal::link_item(state, idx),
         NormalLinkMessage::ToLink(idx) => normal::link_to_link(state, data, idx),
-    }
-}
-
-pub fn handle_edit_folder_message(
-    state: &mut FolderEditState,
-    data: &mut LinkDirSet,
-    message: EditMessage,
-) -> MessageUpdater<EditMessage> {
-    match state.mode() {
-        InputMode::Normal => match message {
-            EditMessage::HandleInput(key_event) => {
-                edit::folder_handle_input_normal(state, data, key_event)
-            }
-            EditMessage::Edit => edit::folder_edit_normal(state, data),
-            EditMessage::Confirm => edit::folder_confirm_normal(state, data),
-            EditMessage::Switch => MessageUpdater::new(),
-            EditMessage::SwitchLeft => MessageUpdater::new(),
-            EditMessage::SwitchRight => MessageUpdater::new(),
-            EditMessage::SwitchOrConfirm => {
-                MessageUpdater::new().with_message(EditMessage::Confirm)
-            }
-            EditMessage::Quit(select) => edit::folder_quit_normal(state, data, select),
-            EditMessage::Back => MessageUpdater::new(),
-        },
-        InputMode::Editing => match message {
-            EditMessage::HandleInput(key_event) => {
-                edit::folder_handle_input_editing(state, data, key_event)
-            }
-            EditMessage::Edit => MessageUpdater::new(),
-            EditMessage::Confirm => edit::folder_confirm_editing(state, data),
-            EditMessage::Switch => MessageUpdater::new(),
-            EditMessage::SwitchLeft => MessageUpdater::new(),
-            EditMessage::SwitchRight => MessageUpdater::new(),
-            EditMessage::SwitchOrConfirm => {
-                MessageUpdater::new().with_message(EditMessage::Confirm)
-            }
-            EditMessage::Quit(select) => edit::folder_quit_editing(state, data, select),
-            EditMessage::Back => edit::folder_back_editing(state, data),
-        },
-    }
-}
-
-pub fn handle_edit_link_message(
-    state: &mut LinkEditState,
-    data: &mut LinkDir,
-    message: EditMessage,
-) -> MessageUpdater<EditMessage> {
-    match state.mode() {
-        InputMode::Normal => match message {
-            EditMessage::HandleInput(key_event) => {
-                edit::link_handle_input_normal(state, data, key_event)
-            }
-            EditMessage::Edit => edit::link_edit_normal(state, data),
-            EditMessage::Confirm => edit::link_confirm_normal(state, data),
-            EditMessage::Switch => edit::link_switch_normal(state, data),
-            EditMessage::SwitchLeft => edit::link_switch_left_normal(state, data),
-            EditMessage::SwitchRight => edit::link_switch_right_normal(state, data),
-            EditMessage::SwitchOrConfirm => edit::link_switch_or_confirm_normal(state, data),
-            EditMessage::Quit(select) => edit::link_quit_normal(state, data, select),
-            EditMessage::Back => MessageUpdater::new(),
-        },
-        InputMode::Editing => match message {
-            EditMessage::HandleInput(key_event) => {
-                edit::link_handle_input_editing(state, data, key_event)
-            }
-            EditMessage::Edit => MessageUpdater::new(),
-            EditMessage::Confirm => edit::link_confirm_editing(state, data),
-            EditMessage::Switch => edit::link_switch_editing(state, data),
-            EditMessage::SwitchLeft => edit::link_switch_left_editing(state, data),
-            EditMessage::SwitchRight => edit::link_switch_right_editing(state, data),
-            EditMessage::SwitchOrConfirm => edit::link_switch_or_confirm_editing(state, data),
-            EditMessage::Quit(select) => edit::link_quit_editing(state, data, select),
-            EditMessage::Back => edit::link_back_editing(state, data),
-        },
     }
 }

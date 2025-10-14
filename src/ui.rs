@@ -10,8 +10,7 @@ use crate::DataTransfer;
 use crate::data::dirset::LinkDirSet;
 use crate::debug::Debugger;
 use crate::ui::float::Float;
-use crate::ui::state::EditPart;
-use state::{FolderNormalState, NormalPart};
+use state::{FolderNormalState, NormalState};
 
 pub mod float;
 pub mod key;
@@ -35,7 +34,7 @@ impl StatefulWidget for &mut App {
     type State = AppData;
     fn render(self, area: Rect, buf: &mut Buffer, data: &mut Self::State) {
         data.cursor = None;
-        view::render_border(self, area, buf);
+        view::render_border(area, buf);
 
         let chunks = Layout::default()
             .margin(1)
@@ -55,29 +54,20 @@ impl StatefulWidget for &mut App {
         let default_state = &mut TableState::default();
         view::render_right_list(self, chunks[2], buf, default_state);
 
-        match &mut self.state {
-            AppState::Edit(part) => match &mut **part {
-                EditPart::Folder(state) => {
+        for float in &mut self.float {
+            match float {
+                Float::FolderEdit(state) => {
                     let area = view::common::centered_rect(50, 25, area);
                     Clear.render(area, buf);
                     let cursor = view::render_folder_edit(state, area, buf);
                     data.cursor = cursor;
                 }
-                EditPart::Link(state) => {
+                Float::LinkEdit(state) => {
                     let area = view::common::centered_rect(60, 30, area);
                     Clear.render(area, buf);
                     let cursor = view::render_link_edit(state, area, buf);
                     data.cursor = cursor;
                 }
-            },
-            AppState::Quit(_) => {
-                // TODO
-            }
-            AppState::Normal(_) => {}
-        }
-
-        if let Some(float) = &mut self.float.last_mut() {
-            match float {
                 Float::FolderDeleteConfirm(state) => {
                     let area = view::common::centered_rect(50, 30, area);
                     Clear.render(area, buf);
@@ -101,7 +91,7 @@ impl StatefulWidget for &mut App {
 impl App {
     pub fn new(data: LinkDirSet) -> Self {
         Self {
-            state: AppState::Normal(Box::new(NormalPart::Folder(FolderNormalState::new()))),
+            state: AppState::Normal(Box::new(NormalState::Folder(FolderNormalState::new()))),
             data,
             float: Vec::new(),
         }

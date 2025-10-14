@@ -1,14 +1,15 @@
 use crate::{
-    data::{dir::LinkDir, dirset::LinkDirSet}, ui::{
+    DataTransfer,
+    data::{dir::LinkDir, dirset::LinkDirSet},
+    ui::{
         float::{
-            confirm::{ConfirmChoice, FolderDeleteConfirmState, LinkDeleteConfirmState}, Float
+            Float,
+            confirm::{ConfirmChoice, FolderDeleteConfirmState, LinkDeleteConfirmState},
+            edit::{FolderEditState, LinkEditState},
         },
         message::{MessageUpdater, NormalFolderMessage, NormalLinkMessage},
-        state::{
-            AppState, EditPart, FolderEditState, FolderNormalState, LinkEditState, LinkNormalState,
-            NormalPart,
-        },
-    }, DataTransfer
+        state::{AppState, FolderNormalState, LinkNormalState, NormalState},
+    },
 };
 
 pub fn folder_select(
@@ -104,9 +105,7 @@ pub fn folder_append(
     _state: &mut FolderNormalState,
     _data: &LinkDirSet,
 ) -> MessageUpdater<NormalFolderMessage> {
-    MessageUpdater::new().with_state(AppState::Edit(Box::new(EditPart::Folder(
-        FolderEditState::new(None),
-    ))))
+    MessageUpdater::new().with_float(Float::FolderEdit(FolderEditState::new(None)))
 }
 
 pub fn folder_rename(
@@ -118,11 +117,9 @@ pub fn folder_rename(
         return MessageUpdater::new();
     }
     match opt_idx {
-        Some(idx) if idx < data.len() => {
-            MessageUpdater::new().with_state(AppState::Edit(Box::new(EditPart::Folder(
-                FolderEditState::new(Some(idx)).with_value(data[idx].identifier()),
-            ))))
-        }
+        Some(idx) if idx < data.len() => MessageUpdater::new().with_float(Float::FolderEdit(
+            FolderEditState::new(Some(idx)).with_value(data[idx].identifier()),
+        )),
         _ => MessageUpdater::new(),
     }
 }
@@ -170,7 +167,7 @@ pub fn folder_to_dir(
     idx: usize,
 ) -> MessageUpdater<NormalFolderMessage> {
     if idx < data.len() {
-        MessageUpdater::new().with_state(AppState::Normal(Box::new(NormalPart::Link(
+        MessageUpdater::new().with_state(AppState::Normal(Box::new(NormalState::Link(
             LinkNormalState::new(state.list_state().selected().unwrap()),
         ))))
     } else {
@@ -183,7 +180,7 @@ pub fn link_back(
     _data: &LinkDir,
 ) -> MessageUpdater<NormalLinkMessage> {
     let dir_idx = state.folder_list_state().selected().unwrap_or(0);
-    MessageUpdater::new().with_state(AppState::Normal(Box::new(NormalPart::Folder(
+    MessageUpdater::new().with_state(AppState::Normal(Box::new(NormalState::Folder(
         FolderNormalState::with_selected(Some(dir_idx)),
     ))))
 }
@@ -281,9 +278,10 @@ pub fn link_append(
     state: &mut LinkNormalState,
     _data: &LinkDir,
 ) -> MessageUpdater<NormalLinkMessage> {
-    MessageUpdater::new().with_state(AppState::Edit(Box::new(EditPart::Link(
-        LinkEditState::new(state.folder_list_state().selected().unwrap(), None),
-    ))))
+    MessageUpdater::new().with_float(Float::LinkEdit(LinkEditState::new(
+        state.folder_list_state().selected().unwrap(),
+        None,
+    )))
 }
 
 pub fn link_rename(
@@ -295,12 +293,10 @@ pub fn link_rename(
         return MessageUpdater::new();
     }
     match opt_idx {
-        Some(idx) if idx < data.len() => {
-            MessageUpdater::new().with_state(AppState::Edit(Box::new(EditPart::Link(
-                LinkEditState::new(state.folder_list_state().selected().unwrap(), Some(idx))
-                    .with_value(data[idx].identifier(), data[idx].path().as_os_str()),
-            ))))
-        }
+        Some(idx) if idx < data.len() => MessageUpdater::new().with_float(Float::LinkEdit(
+            LinkEditState::new(state.folder_list_state().selected().unwrap(), Some(idx))
+                .with_value(data[idx].identifier(), data[idx].path().as_os_str()),
+        )),
         _ => MessageUpdater::new(),
     }
 }
@@ -322,9 +318,10 @@ pub fn link_remove(
                 data.remove(idx);
                 state.select(Some(idx.min(data.len().saturating_sub(1))));
             };
-            MessageUpdater::new().with_float(Float::LinkDeleteConfirm(
-                LinkDeleteConfirmState::new(Box::new(remove), state.folder_index()),
-            ))
+            MessageUpdater::new().with_float(Float::LinkDeleteConfirm(LinkDeleteConfirmState::new(
+                Box::new(remove),
+                state.folder_index(),
+            )))
         }
         _ => MessageUpdater::new(),
     }

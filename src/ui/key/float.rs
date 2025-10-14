@@ -5,7 +5,7 @@ use crate::{
     ui::{
         float::{
             confirm::{ConfirmChoice, FolderDeleteConfirmState, LinkDeleteConfirmState}, warning::WarningState, Float, FloatActionResult, FolderDeleteConfirmCallbackType, LinkDeleteConfirmCallbackType
-        }, message::{ConfirmMessage, FloatUpdater, WarningMessage}, state::{AppState, EditPart, NormalPart}, App
+        }, message::{ConfirmMessage, FloatUpdater, WarningMessage}, state::{AppState, NormalState}, App
     },
 };
 
@@ -82,17 +82,9 @@ pub fn folder_delete_confirm_call(
 ) -> FloatUpdater<ConfirmMessage, FolderDeleteConfirmState<FolderDeleteConfirmCallbackType>> {
     match app_state {
         AppState::Normal(part) => match &mut **part {
-            NormalPart::Folder(folder_state) => {
+            NormalState::Folder(folder_state) => {
                 state.change_choice(choice);
                 state.call(folder_state, data);
-                FloatUpdater::new()
-            }
-            _ => FloatUpdater::new(),
-        },
-        AppState::Edit(part) => match &mut **part {
-            EditPart::Folder(folder_state) => {
-                state.change_choice(choice);
-                state.call(folder_state.state_mut(), data);
                 FloatUpdater::new()
             }
             _ => FloatUpdater::new(),
@@ -158,21 +150,13 @@ pub fn link_delete_confirm_call(
 ) -> FloatUpdater<ConfirmMessage, LinkDeleteConfirmState<LinkDeleteConfirmCallbackType>> {
     match app_state {
         AppState::Normal(part) => match &mut **part {
-            NormalPart::Link(link_state) => {
+            NormalState::Link(link_state) => {
                 state.change_choice(choice);
                 state.call(link_state, data);
                 FloatUpdater::new()
             }
             _ => FloatUpdater::new(),
-        },
-        AppState::Edit(part) => match &mut **part {
-            EditPart::Link(link_state) => {
-                state.change_choice(choice);
-                state.call(link_state.state_mut(), data);
-                FloatUpdater::new()
-            }
-            _ => FloatUpdater::new(),
-        },
+        }
         _ => FloatUpdater::new(),
     }
 }
