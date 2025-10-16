@@ -51,7 +51,7 @@ pub enum EditMessage {
     SwitchLeft,
     SwitchRight,
     SwitchOrConfirm,
-    Quit(Option<usize>),
+    Quit(Option<usize>, bool),  // (choice, ask_save)
     Back,
 }
 
@@ -148,6 +148,11 @@ impl<M: AppMessage, S: FloatState> FloatUpdater<M, S> {
 
     pub fn with_float(mut self, float: Float) -> Self {
         self.float = Some(float);
+        self
+    }
+
+    pub fn with_optional_float(mut self, float: Option<Float>) -> Self {
+        self.float = float;
         self
     }
 }

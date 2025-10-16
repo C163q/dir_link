@@ -11,7 +11,10 @@ use crate::{
         message::{ConfirmMessage, FloatUpdater, WarningMessage},
         state::{
             AppState, NormalState,
-            confirm::{ConfirmChoice, FolderDeleteConfirmState, LinkDeleteConfirmState},
+            confirm::{
+                ConfirmChoice, FolderDeleteConfirmState, FolderSaveConfirmState,
+                LinkDeleteConfirmState, LinkSaveConfirmState,
+            },
             warning::WarningState,
         },
     },
@@ -216,4 +219,156 @@ pub fn warning_message(
     match message {
         WarningMessage::Quit => FloatUpdater::new(),
     }
+}
+
+pub fn handle_folder_save_confirm_key(
+    app: &mut App,
+    key: KeyEvent,
+    mut state: FolderSaveConfirmState,
+) -> FloatActionResult {
+    let mut new_float = None;
+    let mut opt_msg = folder_save_confirm_key(key);
+    while let Some(msg) = opt_msg {
+        let updater = folder_save_confirm_message(app, state, msg);
+        opt_msg = updater.message;
+        match updater.state {
+            Some(s) => state = s,
+            None => return FloatActionResult::new().with_optional_new(updater.float),
+        }
+        new_float = updater.float;
+    }
+    FloatActionResult::new()
+        .with_primary(Float::FolderSaveConfirm(state))
+        .with_optional_new(new_float)
+}
+
+pub fn folder_save_confirm_key(key: KeyEvent) -> Option<ConfirmMessage> {
+    if key.kind == KeyEventKind::Press {
+        match key.code {
+            KeyCode::Char('y') | KeyCode::Char('Y') => Some(ConfirmMessage::Yes),
+            KeyCode::Char('n') | KeyCode::Char('N') => Some(ConfirmMessage::No),
+            KeyCode::Esc | KeyCode::Char('q') | KeyCode::Char('Q') => Some(ConfirmMessage::Quit),
+            KeyCode::Left => Some(ConfirmMessage::SwitchLeft),
+            KeyCode::Right => Some(ConfirmMessage::SwitchRight),
+            KeyCode::Tab | KeyCode::BackTab => Some(ConfirmMessage::Switch),
+            KeyCode::Enter | KeyCode::Char(' ') => Some(ConfirmMessage::Choose),
+            _ => None,
+        }
+    } else {
+        None
+    }
+}
+
+pub fn folder_save_confirm_message(
+    app: &mut App,
+    mut state: FolderSaveConfirmState,
+    message: ConfirmMessage,
+) -> FloatUpdater<ConfirmMessage, FolderSaveConfirmState> {
+    match message {
+        ConfirmMessage::Yes => folder_save_confirm_call(app, ConfirmChoice::Yes, state),
+        ConfirmMessage::No | ConfirmMessage::Quit => {
+            folder_save_confirm_call(app, ConfirmChoice::No, state)
+        }
+        ConfirmMessage::SwitchLeft => {
+            state.change_choice(ConfirmChoice::Yes);
+            FloatUpdater::new().with_state(state)
+        }
+        ConfirmMessage::SwitchRight => {
+            state.change_choice(ConfirmChoice::No);
+            FloatUpdater::new().with_state(state)
+        }
+        ConfirmMessage::Switch => {
+            state.switch_chioce();
+            FloatUpdater::new().with_state(state)
+        }
+        ConfirmMessage::Choose => {
+            let choice = state.choice();
+            folder_save_confirm_call(app, choice, state)
+        }
+    }
+}
+
+pub fn folder_save_confirm_call(
+    app: &mut App,
+    choice: ConfirmChoice,
+    mut state: FolderSaveConfirmState,
+) -> FloatUpdater<ConfirmMessage, FolderSaveConfirmState> {
+    state.change_choice(choice);
+    FloatUpdater::new().with_optional_float(state.call(app))
+}
+
+pub fn handle_link_save_confirm_key(
+    app: &mut App,
+    key: KeyEvent,
+    mut state: LinkSaveConfirmState,
+) -> FloatActionResult {
+    let mut new_float = None;
+    let mut opt_msg = link_save_confirm_key(key);
+    while let Some(msg) = opt_msg {
+        let updater = link_save_confirm_message(app, state, msg);
+        opt_msg = updater.message;
+        match updater.state {
+            Some(s) => state = s,
+            None => return FloatActionResult::new().with_optional_new(updater.float),
+        }
+        new_float = updater.float;
+    }
+    FloatActionResult::new()
+        .with_primary(Float::LinkSaveConfirm(state))
+        .with_optional_new(new_float)
+}
+
+pub fn link_save_confirm_key(key: KeyEvent) -> Option<ConfirmMessage> {
+    if key.kind == KeyEventKind::Press {
+        match key.code {
+            KeyCode::Char('y') | KeyCode::Char('Y') => Some(ConfirmMessage::Yes),
+            KeyCode::Char('n') | KeyCode::Char('N') => Some(ConfirmMessage::No),
+            KeyCode::Esc | KeyCode::Char('q') | KeyCode::Char('Q') => Some(ConfirmMessage::Quit),
+            KeyCode::Left => Some(ConfirmMessage::SwitchLeft),
+            KeyCode::Right => Some(ConfirmMessage::SwitchRight),
+            KeyCode::Tab | KeyCode::BackTab => Some(ConfirmMessage::Switch),
+            KeyCode::Enter | KeyCode::Char(' ') => Some(ConfirmMessage::Choose),
+            _ => None,
+        }
+    } else {
+        None
+    }
+}
+
+pub fn link_save_confirm_message(
+    app: &mut App,
+    mut state: LinkSaveConfirmState,
+    message: ConfirmMessage,
+) -> FloatUpdater<ConfirmMessage, LinkSaveConfirmState> {
+    match message {
+        ConfirmMessage::Yes => link_save_confirm_call(app, ConfirmChoice::Yes, state),
+        ConfirmMessage::No | ConfirmMessage::Quit => {
+            link_save_confirm_call(app, ConfirmChoice::No, state)
+        }
+        ConfirmMessage::SwitchLeft => {
+            state.change_choice(ConfirmChoice::Yes);
+            FloatUpdater::new().with_state(state)
+        }
+        ConfirmMessage::SwitchRight => {
+            state.change_choice(ConfirmChoice::No);
+            FloatUpdater::new().with_state(state)
+        }
+        ConfirmMessage::Switch => {
+            state.switch_chioce();
+            FloatUpdater::new().with_state(state)
+        }
+        ConfirmMessage::Choose => {
+            let choice = state.choice();
+            link_save_confirm_call(app, choice, state)
+        }
+    }
+}
+
+pub fn link_save_confirm_call(
+    app: &mut App,
+    choice: ConfirmChoice,
+    mut state: LinkSaveConfirmState,
+) -> FloatUpdater<ConfirmMessage, LinkSaveConfirmState> {
+    state.change_choice(choice);
+    FloatUpdater::new().with_optional_float(state.call(app))
 }

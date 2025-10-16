@@ -66,6 +66,8 @@ pub fn handle_key_event_float(app: &mut App, key: KeyEvent, float: Float) {
         }
         Float::LinkDeleteConfirm(state) => float::handle_link_delete_confirm_key(app, key, state),
         Float::Warning(state) => float::handle_warning_key(app, key, state),
+        Float::FolderSaveConfirm(state) => float::handle_folder_save_confirm_key(app, key, state),
+        Float::LinkSaveConfirm(state) => float::handle_link_save_confirm_key(app, key, state),
     };
     app.float.extend(float_action);
 }

@@ -82,6 +82,18 @@ impl StatefulWidget for &mut App {
                     Clear.render(area, buf);
                     view::render_warning_float(state, area, buf);
                 }
+                Float::FolderSaveConfirm(state) => {
+                    let edit_area = view::common::centered_rect(50, 25, area);
+                    let area = view::common::centered_rect(50, 30, area);
+                    Clear.render(area, buf);
+                    view::render_folder_save_confirm_float(state, edit_area, area, buf);
+                }
+                Float::LinkSaveConfirm(state) => {
+                    let edit_area = view::common::centered_rect(60, 30, area);
+                    let area = view::common::centered_rect(50, 30, area);
+                    Clear.render(area, buf);
+                    view::render_link_save_confirm_float(state, edit_area, area, buf);
+                }
             }
         }
     }

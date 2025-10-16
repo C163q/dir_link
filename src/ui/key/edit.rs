@@ -14,6 +14,7 @@ use crate::{
         message::{EditMessage, FloatUpdater},
         state::{
             AppState, FolderNormalState, InputMode, InputPart, LinkNormalState, NormalState,
+            confirm::{FolderSaveConfirmState, LinkSaveConfirmState},
             edit::{FolderEditState, LinkEditState},
             warning::WarningState,
         },
@@ -70,7 +71,7 @@ pub fn edit_folder_message(
             EditMessage::SwitchOrConfirm => FloatUpdater::new()
                 .with_message(EditMessage::Confirm)
                 .with_state(state),
-            EditMessage::Quit(select) => folder_quit_normal(app, select),
+            EditMessage::Quit(select, ask_save) => folder_quit_normal(app, state, select, ask_save),
             EditMessage::Back => FloatUpdater::new().with_state(state),
         },
         InputMode::Editing => match msg {
@@ -89,8 +90,8 @@ pub fn edit_folder_message(
             EditMessage::SwitchOrConfirm => FloatUpdater::new()
                 .with_message(EditMessage::Confirm)
                 .with_state(state),
-            EditMessage::Quit(select) => {
-                let updater = folder_quit_editing(app, &mut state, select);
+            EditMessage::Quit(select, ask_save) => {
+                let updater = folder_quit_editing(app, &mut state, select, ask_save);
                 updater.with_state(state)
             }
             EditMessage::Back => {
@@ -115,11 +116,11 @@ pub fn folder_handle_input_normal(
     if key_event.kind == KeyEventKind::Press {
         match (key_event.modifiers, key_event.code) {
             (KeyModifiers::CONTROL, KeyCode::Char('c') | KeyCode::Char('C')) => {
-                FloatUpdater::new().with_message(EditMessage::Quit(quit_select))
+                FloatUpdater::new().with_message(EditMessage::Quit(quit_select, true))
             }
             (_, code) => match code {
                 KeyCode::Esc | KeyCode::Char('q') => {
-                    FloatUpdater::new().with_message(EditMessage::Quit(quit_select))
+                    FloatUpdater::new().with_message(EditMessage::Quit(quit_select, true))
                 }
                 KeyCode::Enter => FloatUpdater::new().with_message(EditMessage::Confirm),
                 KeyCode::Char('a') | KeyCode::Char('e') => {
@@ -183,13 +184,28 @@ pub fn folder_confirm_normal(
             Some(idx)
         }
     };
-    FloatUpdater::new().with_message(EditMessage::Quit(select))
+    FloatUpdater::new().with_message(EditMessage::Quit(select, false))
 }
 
 pub fn folder_quit_normal(
     app: &mut App,
+    state: FolderEditState,
     select: Option<usize>,
+    ask_save: bool,
 ) -> FloatUpdater<EditMessage, FolderEditState> {
+    let confirm = if ask_save {
+        match state.selected() {
+            None => !state.input().value().is_empty(),
+            Some(idx) => state.input().value() != app.data[idx].identifier(),
+        }
+    } else {
+        false
+    };
+    if confirm {
+        return FloatUpdater::new().with_float(Float::FolderSaveConfirm(
+            FolderSaveConfirmState::new(state, select),
+        ));
+    }
     app.state = AppState::Normal(Box::new(NormalState::Folder(
         FolderNormalState::with_selected(select),
     )));
@@ -205,7 +221,7 @@ pub fn folder_handle_input_editing(
     if key_event.kind == KeyEventKind::Press {
         match (key_event.modifiers, key_event.code) {
             (KeyModifiers::CONTROL, KeyCode::Char('c') | KeyCode::Char('C')) => {
-                FloatUpdater::new().with_message(EditMessage::Quit(state.selected()))
+                FloatUpdater::new().with_message(EditMessage::Quit(state.selected(), true))
             }
             (_, code) => match code {
                 KeyCode::Esc => FloatUpdater::new().with_message(EditMessage::Back),
@@ -233,6 +249,7 @@ pub fn folder_quit_editing(
     app: &mut App,
     state: &mut FolderEditState,
     select: Option<usize>,
+    ask_save: bool,
 ) -> FloatUpdater<EditMessage, FolderEditState> {
     let select = if app.data.is_empty() {
         None
@@ -240,7 +257,7 @@ pub fn folder_quit_editing(
         select.or(Some(0))
     };
     state.switch_mode();
-    FloatUpdater::new().with_message(EditMessage::Quit(select))
+    FloatUpdater::new().with_message(EditMessage::Quit(select, ask_save))
 }
 
 pub fn folder_back_editing(
@@ -310,7 +327,7 @@ pub fn edit_link_message(
                 let updater = link_switch_or_confirm_normal(&mut state);
                 updater.with_state(state)
             }
-            EditMessage::Quit(select) => link_quit_normal(app, &state, select),
+            EditMessage::Quit(select, ask_save) => link_quit_normal(app, state, select, ask_save),
             EditMessage::Back => FloatUpdater::new().with_state(state),
         },
         InputMode::Editing => match msg {
@@ -339,8 +356,8 @@ pub fn edit_link_message(
                 let updater = link_switch_or_confirm_editing(&mut state);
                 updater.with_state(state)
             }
-            EditMessage::Quit(select) => {
-                let updater = link_quit_editing(&mut state, select);
+            EditMessage::Quit(select, ask_save) => {
+                let updater = link_quit_editing(&mut state, select, ask_save);
                 updater.with_state(state)
             }
             EditMessage::Back => {
@@ -365,11 +382,11 @@ pub fn link_handle_input_normal(
     if key_event.kind == KeyEventKind::Press {
         match (key_event.modifiers, key_event.code) {
             (KeyModifiers::CONTROL, KeyCode::Char('c') | KeyCode::Char('C')) => {
-                FloatUpdater::new().with_message(EditMessage::Quit(quit_select))
+                FloatUpdater::new().with_message(EditMessage::Quit(quit_select, true))
             }
             (_, code) => match code {
                 KeyCode::Esc | KeyCode::Char('q') => {
-                    FloatUpdater::new().with_message(EditMessage::Quit(quit_select))
+                    FloatUpdater::new().with_message(EditMessage::Quit(quit_select, true))
                 }
                 KeyCode::Enter => FloatUpdater::new().with_message(EditMessage::Confirm),
                 KeyCode::Char('a') | KeyCode::Char('e') => {
@@ -408,26 +425,40 @@ pub fn link_confirm_normal(
             let link = match build_link {
                 Ok(link) => link,
                 // TODO: handle Err later (identifier or path empty)
-                Err(_) => return FloatUpdater::new().with_message(EditMessage::Quit(Some(0))),
+                Err(err) => {
+                    let msg = err.message().to_owned();
+                    return FloatUpdater::new().with_float(Float::Warning(WarningState::new(msg)));
+                }
             };
             // TODO: handle Err later (identifier already exists)
-            data.push(link);
-            Some(data.len().saturating_sub(1))
+            match data.push(link) {
+                Ok(_) => Some(data.len().saturating_sub(1)),
+                Err(err) => {
+                    let msg = err.message().to_owned();
+                    return FloatUpdater::new().with_float(Float::Warning(WarningState::new(msg)));
+                }
+            }
         }
         Some(idx) => {
             // rename
             // TODO: handle Err later (identifier or path empty, identifier already exists)
-            if key != data[idx].identifier() {
-                data.rename(idx, key);
+            if key != data[idx].identifier()
+                && let Err(err) = data.rename(idx, key)
+            {
+                let msg = err.message().to_owned();
+                return FloatUpdater::new().with_float(Float::Warning(WarningState::new(msg)));
             }
-            if value != data[idx].path() {
-                data.relink(idx, &value);
+            if value != data[idx].path()
+                && let Err(err) = data.relink(idx, &value)
+            {
+                let msg = err.message().to_owned();
+                return FloatUpdater::new().with_float(Float::Warning(WarningState::new(msg)));
             }
             Some(idx)
         }
     };
 
-    FloatUpdater::new().with_message(EditMessage::Quit(select))
+    FloatUpdater::new().with_message(EditMessage::Quit(select, false))
 }
 
 pub fn link_switch_normal(state: &mut LinkEditState) -> FloatUpdater<EditMessage, LinkEditState> {
@@ -463,9 +494,26 @@ pub fn link_switch_or_confirm_normal(
 
 pub fn link_quit_normal(
     app: &mut App,
-    state: &LinkEditState,
+    state: LinkEditState,
     select: Option<usize>,
+    ask_save: bool,
 ) -> FloatUpdater<EditMessage, LinkEditState> {
+    let confirm = if ask_save {
+        match state.selected() {
+            None => !state.value().0.is_empty() || !state.value().1.is_empty(),
+            Some(idx) => {
+                state.value().0 != app.data[state.from()][idx].identifier()
+                    || state.value().1 != app.data[state.from()][idx].path().as_os_str()
+            }
+        }
+    } else {
+        false
+    };
+    if confirm {
+        return FloatUpdater::new().with_float(Float::LinkSaveConfirm(LinkSaveConfirmState::new(
+            state, select,
+        )));
+    }
     app.state = AppState::Normal(Box::new(NormalState::Link(LinkNormalState::with_selected(
         state.from(),
         select,
@@ -484,7 +532,7 @@ pub fn link_handle_input_editing(
     if key_event.kind == KeyEventKind::Press {
         match (key_event.modifiers, key_event.code) {
             (KeyModifiers::CONTROL, KeyCode::Char('c') | KeyCode::Char('C')) => {
-                FloatUpdater::new().with_message(EditMessage::Quit(state.selected()))
+                FloatUpdater::new().with_message(EditMessage::Quit(state.selected(), true))
             }
             (_, code) => match code {
                 KeyCode::Esc => FloatUpdater::new().with_message(EditMessage::Back),
@@ -546,9 +594,10 @@ pub fn link_switch_or_confirm_editing(
 pub fn link_quit_editing(
     state: &mut LinkEditState,
     select: Option<usize>,
+    ask_save: bool,
 ) -> FloatUpdater<EditMessage, LinkEditState> {
     state.switch_mode();
-    FloatUpdater::new().with_message(EditMessage::Quit(select))
+    FloatUpdater::new().with_message(EditMessage::Quit(select, ask_save))
 }
 
 pub fn link_back_editing(state: &mut LinkEditState) -> FloatUpdater<EditMessage, LinkEditState> {

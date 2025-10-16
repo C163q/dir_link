@@ -18,7 +18,7 @@ impl Link {
         if identifier.is_empty() {
             return Err(Error::new(
                 ErrorKind::InvaildIdentifier,
-                "identifer is empty",
+                "Link name is empty",
             ));
         }
         if !path.is_absolute() {
@@ -38,7 +38,7 @@ impl Link {
         if identifier.is_empty() {
             return Err(Error::new(
                 ErrorKind::InvaildIdentifier,
-                "identifier is empty",
+                "Link name is empty",
             ));
         }
         self.identifier = identifier.to_string();
@@ -53,7 +53,7 @@ impl Link {
         if identifier.is_empty() {
             return Err(Error::new(
                 ErrorKind::InvaildIdentifier,
-                "identifer is empty",
+                "Link name is empty",
             ));
         }
         self.identifier = identifier.to_string();

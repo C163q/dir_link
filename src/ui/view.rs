@@ -1,14 +1,14 @@
 use ratatui::prelude::*;
 use ratatui::style::Styled;
 use ratatui::widgets::{
-    Block, BorderType, Borders, Cell, HighlightSpacing, List, ListItem, ListState, Paragraph, Row,
-    Table, TableState, Wrap,
+    Block, BorderType, Borders, Cell, Clear, HighlightSpacing, List, ListItem, ListState, Paragraph, Row, Table, TableState, Wrap
 };
 use ratatui::{buffer::Buffer, layout::Rect};
 use tui_input::Input;
 
 use crate::data::dir::LinkDir;
 use crate::data::dirset::LinkDirSet;
+use crate::ui::state::confirm::{FolderSaveConfirmState, LinkSaveConfirmState};
 use crate::ui::App;
 use crate::ui::state::{
     FolderNormalState, InputMode, InputPart, LinkNormalState,
@@ -274,7 +274,7 @@ pub fn render_folder_delete_confirm_float<F>(
 ) where
     F: FnOnce(ConfirmChoice, &mut FolderNormalState, &mut LinkDirSet),
 {
-    render_conform_border(area, buf);
+    render_confirm_border(area, buf);
 
     let chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -295,7 +295,7 @@ pub fn render_link_delete_confirm_float<F>(
 ) where
     F: FnOnce(ConfirmChoice, &mut LinkNormalState, &mut LinkDir),
 {
-    render_conform_border(area, buf);
+    render_confirm_border(area, buf);
 
     let chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -309,7 +309,7 @@ pub fn render_link_delete_confirm_float<F>(
     render_confirm_yes_no_choice(chunks[1], buf, state.choice());
 }
 
-pub fn render_conform_border(area: Rect, buf: &mut Buffer) {
+pub fn render_confirm_border(area: Rect, buf: &mut Buffer) {
     let block = Block::bordered()
         .border_style(Style::default().fg(Color::White))
         .border_type(BorderType::Rounded)
@@ -397,4 +397,48 @@ pub fn render_warning_float(state: &mut WarningState, area: Rect, buf: &mut Buff
         .style(Color::LightRed)
         .add_modifier(Modifier::BOLD);
     paragraph.render(common::vertical_centered_text(message, chunk, 0, 0), buf);
+}
+
+pub fn render_folder_save_confirm_float(
+    state: &mut FolderSaveConfirmState,
+    edit_area: Rect,
+    area: Rect,
+    buf: &mut Buffer,
+) {
+    render_folder_edit(state.last_state_mut(), edit_area, buf);
+
+    Clear.render(area, buf);
+    render_confirm_border(area, buf);
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .margin(1)
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+        .split(area);
+
+    let hint_message = "Are you sure to quit without saving?";
+    render_confirm_message(chunks[0], buf, hint_message);
+
+    render_confirm_yes_no_choice(chunks[1], buf, state.choice());
+}
+
+pub fn render_link_save_confirm_float(
+    state: &mut LinkSaveConfirmState,
+    edit_area: Rect,
+    area: Rect,
+    buf: &mut Buffer,
+) {
+    render_link_edit(state.last_state_mut(), edit_area, buf);
+
+    Clear.render(area, buf);
+    render_confirm_border(area, buf);
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .margin(1)
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+        .split(area);
+
+    let hint_message = "Are you sure to quit without saving?";
+    render_confirm_message(chunks[0], buf, hint_message);
+
+    render_confirm_yes_no_choice(chunks[1], buf, state.choice());
 }
