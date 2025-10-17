@@ -1,15 +1,19 @@
+use std::ops::Add;
+
 use ratatui::prelude::*;
 use ratatui::style::Styled;
 use ratatui::widgets::{
-    Block, BorderType, Borders, Cell, Clear, HighlightSpacing, List, ListItem, ListState, Paragraph, Row, Table, TableState, Wrap
+    Block, BorderType, Borders, Cell, Clear, HighlightSpacing, List, ListItem, ListState,
+    Paragraph, Row, Table, TableState, Wrap,
 };
 use ratatui::{buffer::Buffer, layout::Rect};
 use tui_input::Input;
+use unicode_width::UnicodeWidthStr;
 
 use crate::data::dir::LinkDir;
 use crate::data::dirset::LinkDirSet;
-use crate::ui::state::confirm::{FolderSaveConfirmState, LinkSaveConfirmState};
 use crate::ui::App;
+use crate::ui::state::confirm::{FolderSaveConfirmState, LinkSaveConfirmState};
 use crate::ui::state::{
     FolderNormalState, InputMode, InputPart, LinkNormalState,
     confirm::{ConfirmChoice, FolderDeleteConfirmState, LinkDeleteConfirmState},
@@ -145,8 +149,8 @@ pub fn render_input(
     let scroll = input.visual_scroll(width as usize);
 
     let style = match input_mode {
-        InputMode::Normal => Style::default().fg(Color::White),
-        InputMode::Editing => Style::default().fg(Color::Yellow),
+        InputMode::Normal => Style::reset().fg(Color::White),
+        InputMode::Editing => Style::reset().fg(Color::Yellow),
     };
 
     let block = Block::default()
@@ -176,9 +180,57 @@ pub fn render_input(
     input_text.render(chunks[1], buf);
 
     if input_mode == InputMode::Editing {
-        let x = input.visual_cursor().saturating_sub(scroll) + 1;
-        let (x_offset, y_offset) = ((x % width as usize) as u16, (x / width as usize) as u16);
-        Some((chunks[1].x + x_offset, chunks[1].y + 1 + y_offset))
+        // FIXME:
+        // 目前仍然存在多宽度字符时光标位置计算不准确的问题
+        //
+        // border                        一格位置显示不了一个完整字符
+        //  ↓                                          ↓
+        //  |字字字字字字字字字字字字字字字字字字字字字 |
+        //  |字字█ ←该方块为光标应该在的位置            |
+        //      ↑
+        //  光标实际位置
+        //
+        //  计算的时候吧无法显示完整字符的部分也算进去了
+        let text_idx = input
+            .value()
+            .char_indices()
+            .nth(input.cursor())
+            .map_or_else(|| input.value().len(), |(i, _)| i);
+        let text = input.value().split_at(text_idx).0;
+
+        let lines: Vec<_> = text.lines().collect();
+        let mut lines_width: Vec<_> = lines
+            .iter()
+            .map(|&line| UnicodeWidthStr::width(line))
+            .collect();
+        if let Some(value) = lines_width.last_mut() {
+            *value = value.add(1);
+        }
+
+        let text_area = Rect {
+            x: chunks[1].x + 1,
+            y: chunks[1].y + 1,
+            width: chunks[1].width.saturating_sub(2),
+            height: chunks[1].height.saturating_sub(2),
+        };
+
+        let lines_height: Vec<_> = lines_width
+            .iter()
+            .map(|&w| w.div_ceil(text_area.width as usize))
+            .collect();
+        let x_offset = (lines_width
+            .last()
+            .cloned()
+            .unwrap_or_default()
+            .saturating_sub(1)
+            % text_area.width as usize) as u16;
+        let y_offset = lines_height
+            .iter()
+            .sum::<usize>()
+            .saturating_sub(1)
+            .min(text_area.height as usize) as u16;
+
+        Some((text_area.x + x_offset, text_area.y + y_offset))
     } else {
         None
     }
