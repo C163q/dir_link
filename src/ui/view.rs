@@ -14,6 +14,7 @@ use crate::data::dir::LinkDir;
 use crate::data::dirset::LinkDirSet;
 use crate::ui::App;
 use crate::ui::state::confirm::{FolderSaveConfirmState, LinkSaveConfirmState};
+use crate::ui::state::warning::{CorruptDataWarningChoice, CorruptDataWarningState};
 use crate::ui::state::{
     FolderNormalState, InputMode, InputPart, LinkNormalState,
     confirm::{ConfirmChoice, FolderDeleteConfirmState, LinkDeleteConfirmState},
@@ -23,7 +24,7 @@ use crate::ui::state::{
 
 pub mod common;
 
-pub fn render_border(area: Rect, buf: &mut Buffer) {
+pub fn render_main_border(area: Rect, buf: &mut Buffer) {
     let block = Block::bordered()
         .title_top(Line::styled("Dir Link", Style::default().fg(Color::Yellow)).left_aligned())
         .border_type(BorderType::Rounded)
@@ -31,7 +32,7 @@ pub fn render_border(area: Rect, buf: &mut Buffer) {
     block.render(area, buf);
 }
 
-pub fn render_divider(area: Rect, buf: &mut Buffer) {
+pub fn render_main_divider(area: Rect, buf: &mut Buffer) {
     let block = Block::default()
         .borders(Borders::RIGHT | Borders::LEFT)
         .border_style(Style::default().fg(Color::White));
@@ -319,6 +320,15 @@ pub fn render_link_edit(
     key_pos.or(value_pos)
 }
 
+pub fn render_confirm_yes_no_choice(area: Rect, buf: &mut Buffer, choice: ConfirmChoice) {
+    let messages = ["Yes(Y)", "No(N)"];
+    let choice = match choice {
+        ConfirmChoice::Yes => 0,
+        ConfirmChoice::No => 1,
+    };
+    common::render_comfirm_choice(area, buf, messages, choice, (1, 2));
+}
+
 pub fn render_folder_delete_confirm_float<F>(
     state: &FolderDeleteConfirmState<F>,
     area: Rect,
@@ -374,73 +384,31 @@ pub fn render_confirm_border(area: Rect, buf: &mut Buffer) {
 }
 
 pub fn render_confirm_message(area: Rect, buf: &mut Buffer, message: &str) {
-    let paragraph = Paragraph::new(message)
+    let text = Text::from(
+        message
+            .lines()
+            .map(|line| Line::from(line.trim_end()))
+            .collect::<Vec<_>>(),
+    );
+
+    let paragraph = Paragraph::new(text)
         .centered()
         .wrap(Wrap { trim: false })
         .style(Color::LightRed)
         .add_modifier(Modifier::BOLD);
-    paragraph.render(common::vertical_centered_text(message, area, 0, 0), buf);
-}
-
-pub fn render_confirm_yes_no_choice(area: Rect, buf: &mut Buffer, choice: ConfirmChoice) {
-    let choice_areas = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
-        .split(area);
-
-    let yes_message = "Yes(Y)";
-    let no_message = "No(N)";
-    let highlight_style = Style::default().fg(Color::Black).bg(Color::Cyan);
-
-    let (yes_style, no_style) = match choice {
-        ConfirmChoice::Yes => (highlight_style, Style::default()),
-        ConfirmChoice::No => (Style::default(), highlight_style),
-    };
-
-    let yes_paragraph = Paragraph::new(yes_message)
-        .centered()
-        .style(Style::default())
-        .wrap(Wrap { trim: false })
-        .block(Block::bordered().border_type(BorderType::Plain))
-        .style(yes_style);
-    let no_paragraph = Paragraph::new(no_message)
-        .centered()
-        .style(Style::default())
-        .wrap(Wrap { trim: false })
-        .block(Block::bordered().border_type(BorderType::Plain))
-        .style(no_style);
-    yes_paragraph.render(
-        common::vertical_centered_text(yes_message, choice_areas[0], 2, 2),
-        buf,
-    );
-    no_paragraph.render(
-        common::vertical_centered_text(no_message, choice_areas[1], 2, 2),
-        buf,
-    );
+    paragraph.render(common::centered_text(message, area, 0, 0), buf);
 }
 
 pub fn render_warning_float(state: &mut WarningState, area: Rect, buf: &mut Buffer) {
     let hint_message = "Press <Esc>/<Q> to Quit";
-    let block = Block::bordered()
-        .border_style(Style::default().fg(Color::White))
-        .border_type(BorderType::Rounded)
-        .title_top(
-            Line::from("Warning")
-                .style(Style::default().fg(Color::Yellow))
-                .bold()
-                .centered(),
-        )
-        .title_bottom(
-            Line::from(hint_message)
-                .style(Style::default().fg(Color::LightGreen))
-                .centered(),
-        );
-    block.render(area, buf);
 
-    let chunk = Layout::default()
-        .margin(1)
-        .constraints([Constraint::Min(0)])
-        .split(area)[0];
+    let chunk = common::render_border(
+        Some(Line::from("Warning").style(Style::default().fg(Color::Yellow))),
+        Some(Line::from(hint_message).style(Style::default().fg(Color::LightGreen))),
+        Style::default().fg(Color::White),
+        area,
+        buf,
+    );
 
     let message = state.message();
     let paragraph = Paragraph::new(message)
@@ -448,7 +416,7 @@ pub fn render_warning_float(state: &mut WarningState, area: Rect, buf: &mut Buff
         .wrap(Wrap { trim: false })
         .style(Color::LightRed)
         .add_modifier(Modifier::BOLD);
-    paragraph.render(common::vertical_centered_text(message, chunk, 0, 0), buf);
+    paragraph.render(common::centered_text(message, chunk, 0, 0), buf);
 }
 
 pub fn render_folder_save_confirm_float(
@@ -493,4 +461,35 @@ pub fn render_link_save_confirm_float(
     render_confirm_message(chunks[0], buf, hint_message);
 
     render_confirm_yes_no_choice(chunks[1], buf, state.choice());
+}
+
+pub fn render_corrupt_data_warning_float(
+    state: &mut CorruptDataWarningState,
+    area: Rect,
+    buf: &mut Buffer,
+) {
+    let hint_message = "Choose an option and press <Enter>";
+
+    let chunk = common::render_border(
+        Some(Line::from("Corrupt Data Error").style(Style::default().fg(Color::Red))),
+        Some(Line::from(hint_message).style(Style::default().fg(Color::LightGreen))),
+        Style::default().fg(Color::White),
+        area,
+        buf,
+    );
+
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+        .split(chunk);
+
+    let hint_message = String::from("Data corrupt!\nError message: ") + state.message();
+    render_confirm_message(area, buf, &hint_message);
+
+    let messages = ["Exit", "Create New Data"];
+    let choice = match state.choice() {
+        CorruptDataWarningChoice::Exit => 0,
+        CorruptDataWarningChoice::NewData => 1,
+    };
+    common::render_comfirm_choice(chunks[1], buf, messages, choice, (1, 2));
 }

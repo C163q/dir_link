@@ -45,7 +45,10 @@ impl DataTransfer {
     pub fn with_config(path: PathBuf) -> Self {
         Self {
             link: None,
-            config: Some(Config { path: Some(path) }),
+            config: Some(Config {
+                path: Some(path),
+                save: true,
+            }),
         }
     }
 
@@ -61,13 +64,24 @@ impl DataTransfer {
 #[derive(Debug)]
 pub struct Config {
     pub path: Option<PathBuf>,
+    pub save: bool,
 }
 
 // 临时函数
-pub fn output_result(bytes: &[u8], path: Option<&PathBuf>) -> io::Result<()> {
-    match path {
-        Some(path) => fs::write(path, bytes),
-        None => io::stdout().write_all(bytes),
+pub fn output_result(bytes: &[u8], path: &PathBuf) -> io::Result<()> {
+    fs::write(path, bytes)
+}
+
+pub fn get_data(data_path: &Path) -> io::Result<LinkDirSet> {
+    if !data_path.is_file() {
+        let mut file = BufWriter::new(File::create(data_path)?);
+        let data = LinkDirSet::new();
+        file.write_all(serde_json::to_vec(&data)?.as_slice())?;
+        Ok(data)
+    } else {
+        let vec = fs::read(data_path)?;
+        let data = serde_json::from_slice(&vec);
+        data.map_err(|err| err.into())
     }
 }
 
@@ -75,19 +89,11 @@ pub fn run_app<B: Backend>(
     data_path: &Path,
     terminal: Terminal<B>,
     mut config: Config,
-) -> io::Result<()> {
+) -> io::Result<Option<Link>> {
     // TODO: warn if data file is corrupted
-    let (data, success): (LinkDirSet, bool) = if !data_path.is_file() {
-        let mut file = BufWriter::new(File::create(data_path)?);
-        let data = LinkDirSet::new();
-        file.write_all(serde_json::to_vec(&data)?.as_slice())?;
-        (data, true)
-    } else {
-        let vec = fs::read(data_path)?;
-        match serde_json::from_slice(&vec) {
-            Ok(data) => (data, true),
-            Err(_) => (LinkDirSet::new(), false),
-        }
+    let (data, success) = match get_data(data_path) {
+        Ok(data) => (data, Ok(())),
+        Err(err) => (LinkDirSet::new(), Err(err)),
     };
 
     let path = config.path.take();
@@ -96,18 +102,22 @@ pub fn run_app<B: Backend>(
         link: None,
     };
 
-    let result = App::new(data).run(terminal, success, data_transfer);
+    let data = App::new(data).run(terminal, success, data_transfer)?;
 
-    match result {
-        Ok(data) => {
-            let mut file = BufWriter::new(File::create(data_path)?);
-            file.write_all(serde_json::to_vec(&data.1)?.as_slice())?;
-            if let Some(link) = data.0.link() {
-                output_result(link.path().as_os_str().as_encoded_bytes(), path.as_ref())?;
-            }
-            Ok(())
-        }
-        // TODO: use color_eyre
-        Err(value) => Err(value),
+    if data.0.config.as_ref().unwrap().save {
+        let mut file = BufWriter::new(File::create(data_path)?);
+        file.write_all(serde_json::to_vec(&data.1)?.as_slice())?;
+    }
+
+    if let Some(link) = data.0.link() {
+        path.map_or_else(
+            || Ok(Some(link.clone())),
+            |path| {
+                output_result(link.path().as_os_str().as_encoded_bytes(), &path)?;
+                Ok(None)
+            },
+        )
+    } else {
+        Ok(None)
     }
 }

@@ -3,19 +3,21 @@ use std::{array, iter::Flatten};
 use crate::{
     data::{dir::LinkDir, dirset::LinkDirSet},
     ui::state::{
-            confirm::{
-                ConfirmChoice, FolderDeleteConfirmState, FolderSaveConfirmState,
-                LinkDeleteConfirmState, LinkSaveConfirmState,
-            }, edit::{FolderEditState, LinkEditState}, warning::WarningState, FolderNormalState, LinkNormalState
+        FolderNormalState, LinkNormalState,
+        confirm::{
+            ConfirmChoice, FolderDeleteConfirmState, FolderSaveConfirmState,
+            LinkDeleteConfirmState, LinkSaveConfirmState,
         },
+        edit::{FolderEditState, LinkEditState},
+        warning::{CorruptDataWarningState, WarningState},
+    },
 };
 
 pub type FolderDeleteConfirmCallbackType =
     Box<dyn FnOnce(ConfirmChoice, &mut FolderNormalState, &mut LinkDirSet)>;
 pub type LinkDeleteConfirmCallbackType =
     Box<dyn FnOnce(ConfirmChoice, &mut LinkNormalState, &mut LinkDir)>;
-pub type FolderSaveConfirmCallbackType =
-    Box<dyn FnOnce()>;
+pub type FolderSaveConfirmCallbackType = Box<dyn FnOnce()>;
 
 #[derive(Debug)]
 pub enum Float {
@@ -26,6 +28,7 @@ pub enum Float {
     Warning(WarningState),
     FolderSaveConfirm(FolderSaveConfirmState),
     LinkSaveConfirm(LinkSaveConfirmState),
+    CorruptDataWarning(CorruptDataWarningState),
 }
 
 #[derive(Debug)]

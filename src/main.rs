@@ -11,6 +11,7 @@ fn main() -> color_eyre::Result<()> {
     let args: Vec<_> = env::args_os().collect();
     let config = Config {
         path: args.get(1).map(|s| s.into()),
+        save: true,
     };
 
     let base_dir = BaseDirs::new().unwrap();
@@ -22,5 +23,12 @@ fn main() -> color_eyre::Result<()> {
     let terminal = ratatui::init();
     let result = dir_link::run_app(&local_data, terminal, config);
     ratatui::restore();
-    result.map_err(|e| eyre::eyre!(e))
+
+    result.map_or_else(
+        |e| Err(eyre::eyre!(e)),
+        |data| {
+            data.inspect(|link| println!("{:?}", link.path().as_os_str()));
+            Ok(())
+        },
+    )
 }

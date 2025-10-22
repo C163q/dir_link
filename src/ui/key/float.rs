@@ -3,21 +3,16 @@ use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyEventKind};
 use crate::{
     data::{dir::LinkDir, dirset::LinkDirSet},
     ui::{
-        App,
         float::{
             Float, FloatActionResult, FolderDeleteConfirmCallbackType,
             LinkDeleteConfirmCallbackType,
-        },
-        message::{ConfirmMessage, FloatUpdater, WarningMessage},
-        state::{
-            AppState, NormalState,
+        }, message::{ChooseMessage, ConfirmMessage, FloatUpdater, WarningMessage}, state::{
             confirm::{
                 ConfirmChoice, FolderDeleteConfirmState, FolderSaveConfirmState,
                 LinkDeleteConfirmState, LinkSaveConfirmState,
-            },
-            warning::WarningState,
-        },
-    },
+            }, warning::{CorruptDataWarningChoice, CorruptDataWarningState, WarningState}, AppState, NormalState
+        }, App
+    }, DataTransfer,
 };
 
 pub fn handle_folder_delete_confirm_key(
@@ -371,4 +366,96 @@ pub fn link_save_confirm_call(
 ) -> FloatUpdater<ConfirmMessage, LinkSaveConfirmState> {
     state.change_choice(choice);
     FloatUpdater::new().with_optional_float(state.call(app))
+}
+
+pub fn handle_corrupt_data_warning_key(
+    app: &mut App,
+    key: KeyEvent,
+    mut state: CorruptDataWarningState,
+) -> FloatActionResult {
+    let mut new_float = None;
+    let mut opt_msg = corrupt_data_warning_key(key);
+    while let Some(msg) = opt_msg {
+        let updater = corrupt_data_warning_message(app, state, msg);
+        opt_msg = updater.message;
+        match updater.state {
+            Some(s) => state = s,
+            None => return FloatActionResult::new().with_optional_new(updater.float),
+        }
+        new_float = updater.float;
+    }
+    FloatActionResult::new()
+        .with_primary(Float::CorruptDataWarning(state))
+        .with_optional_new(new_float)
+}
+
+pub fn corrupt_data_warning_key(key: KeyEvent) -> Option<ChooseMessage<bool>> {
+    if key.kind == KeyEventKind::Press {
+        match key.code {
+            KeyCode::Char('q') | KeyCode::Char('Q') | KeyCode::Esc => {
+                Some(ChooseMessage::Quit(false))
+            }
+            KeyCode::Enter | KeyCode::Char(' ') => Some(ChooseMessage::Choose),
+            KeyCode::Left => Some(ChooseMessage::SwitchLeft),
+            KeyCode::Right => Some(ChooseMessage::SwitchRight),
+            KeyCode::Up => Some(ChooseMessage::SwitchUp),
+            KeyCode::Down => Some(ChooseMessage::SwitchDown),
+            KeyCode::Tab => Some(ChooseMessage::Switch),
+            KeyCode::BackTab => Some(ChooseMessage::SwitchBack),
+            _ => None,
+        }
+    } else {
+        None
+    }
+}
+
+pub fn corrupt_data_warning_message(
+    app: &mut App,
+    mut state: CorruptDataWarningState,
+    message: ChooseMessage<bool>,
+) -> FloatUpdater<ChooseMessage<bool>, CorruptDataWarningState> {
+    match message {
+        ChooseMessage::Quit(choice) => {
+            if !choice {
+                app.option.save = false;
+                app.state = AppState::Quit(Box::default());
+            }
+            FloatUpdater::new()
+        }
+        ChooseMessage::Choose => {
+            match state.choice() {
+                CorruptDataWarningChoice::Exit => {
+                    FloatUpdater::new().with_message(ChooseMessage::Quit(false)).with_state(state)
+                }
+                CorruptDataWarningChoice::NewData => {
+                    app.option.save = true;
+                    FloatUpdater::new().with_message(ChooseMessage::Quit(true)).with_state(state)
+                }
+            }
+        }
+        ChooseMessage::SwitchLeft => {
+            state.switch_left();
+            FloatUpdater::new().with_state(state)
+        }
+        ChooseMessage::SwitchRight => {
+            state.switch_right();
+            FloatUpdater::new().with_state(state)
+        }
+        ChooseMessage::SwitchUp => {
+            state.switch_up();
+            FloatUpdater::new().with_state(state)
+        }
+        ChooseMessage::SwitchDown => {
+            state.switch_down();
+            FloatUpdater::new().with_state(state)
+        }
+        ChooseMessage::Switch => {
+            state.switch();
+            FloatUpdater::new().with_state(state)
+        }
+        ChooseMessage::SwitchBack => {
+            state.switch_back();
+            FloatUpdater::new().with_state(state)
+        }
+    }
 }

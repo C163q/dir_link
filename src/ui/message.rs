@@ -71,6 +71,20 @@ pub enum ConfirmMessage {
 impl AppMessage for ConfirmMessage {}
 
 #[derive(Debug, PartialEq, Eq)]
+pub enum ChooseMessage<T> {
+    Switch,
+    SwitchBack,
+    SwitchLeft,
+    SwitchRight,
+    SwitchUp,
+    SwitchDown,
+    Choose,
+    Quit(T),
+}
+
+impl<T> AppMessage for ChooseMessage<T> {}
+
+#[derive(Debug, PartialEq, Eq)]
 pub enum WarningMessage {
     Quit,
 }
