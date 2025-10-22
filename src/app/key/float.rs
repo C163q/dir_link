@@ -1,18 +1,21 @@
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyEventKind};
 
 use crate::{
-    data::{dir::LinkDir, dirset::LinkDirSet},
-    ui::{
+    App,
+    app::message::{ChooseMessage, ConfirmMessage, FloatUpdater, WarningMessage},
+    app::{
         float::{
             Float, FloatActionResult, FolderDeleteConfirmCallbackType,
             LinkDeleteConfirmCallbackType,
-        }, message::{ChooseMessage, ConfirmMessage, FloatUpdater, WarningMessage}, state::{
             confirm::{
                 ConfirmChoice, FolderDeleteConfirmState, FolderSaveConfirmState,
                 LinkDeleteConfirmState, LinkSaveConfirmState,
-            }, warning::{CorruptDataWarningChoice, CorruptDataWarningState, WarningState}, AppState, NormalState
-        }, App
-    }, DataTransfer,
+            },
+            warning::{CorruptDataWarningChoice, CorruptDataWarningState, WarningState},
+        },
+        state::{AppState, NormalState},
+    },
+    data::{dir::LinkDir, dirset::LinkDirSet},
 };
 
 pub fn handle_folder_delete_confirm_key(
@@ -418,21 +421,21 @@ pub fn corrupt_data_warning_message(
         ChooseMessage::Quit(choice) => {
             if !choice {
                 app.option.save = false;
-                app.state = AppState::Quit(Box::default());
+                app.set_state(AppState::Quit(Box::default()));
             }
             FloatUpdater::new()
         }
-        ChooseMessage::Choose => {
-            match state.choice() {
-                CorruptDataWarningChoice::Exit => {
-                    FloatUpdater::new().with_message(ChooseMessage::Quit(false)).with_state(state)
-                }
-                CorruptDataWarningChoice::NewData => {
-                    app.option.save = true;
-                    FloatUpdater::new().with_message(ChooseMessage::Quit(true)).with_state(state)
-                }
+        ChooseMessage::Choose => match state.choice() {
+            CorruptDataWarningChoice::Exit => FloatUpdater::new()
+                .with_message(ChooseMessage::Quit(false))
+                .with_state(state),
+            CorruptDataWarningChoice::NewData => {
+                app.option.save = true;
+                FloatUpdater::new()
+                    .with_message(ChooseMessage::Quit(true))
+                    .with_state(state)
             }
-        }
+        },
         ChooseMessage::SwitchLeft => {
             state.switch_left();
             FloatUpdater::new().with_state(state)

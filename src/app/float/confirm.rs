@@ -2,12 +2,16 @@ use core::fmt;
 use std::fmt::{Debug, Formatter};
 
 use crate::{
-    data::{dir::LinkDir, dirset::LinkDirSet},
-    ui::{
-        float::Float, state::{
-            edit::{FolderEditState, LinkEditState}, AppState, FloatState, FolderNormalState, LinkNormalState, NormalState
-        }, App
+    app::{
+        App,
+        float::{
+            Float, FloatState,
+            edit::{FolderEditState, LinkEditState},
+        },
+        normal::{FolderNormalState, LinkNormalState},
+        state::{AppState, NormalState},
     },
+    data::{dir::LinkDir, dirset::LinkDirSet},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -199,9 +203,9 @@ impl FolderSaveConfirmState {
         if self.choice == ConfirmChoice::No {
             return Some(Float::FolderEdit(self.last_state));
         }
-        app.state = AppState::Normal(Box::new(NormalState::Folder(
+        app.set_state(AppState::Normal(Box::new(NormalState::Folder(
             FolderNormalState::with_selected(self.select),
-        )));
+        ))));
         None
     }
 
@@ -272,9 +276,9 @@ impl LinkSaveConfirmState {
         if self.choice == ConfirmChoice::No {
             return Some(Float::LinkEdit(self.last_state));
         }
-        app.state = AppState::Normal(Box::new(NormalState::Link(
+        app.set_state(AppState::Normal(Box::new(NormalState::Link(
             LinkNormalState::with_selected(self.last_state.from(), self.select),
-        )));
+        ))));
         None
     }
 }

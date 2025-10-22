@@ -1,15 +1,16 @@
 use crate::{
-    DataTransfer,
-    data::{dir::LinkDir, dirset::LinkDirSet},
-    ui::{
-        float::Float,
-        message::{MessageUpdater, NormalFolderMessage, NormalLinkMessage},
-        state::{
-            AppState, FolderNormalState, LinkNormalState, NormalState,
+    app::{
+        data::DataTransfer,
+        float::{
+            Float,
             confirm::{ConfirmChoice, FolderDeleteConfirmState, LinkDeleteConfirmState},
             edit::{FolderEditState, LinkEditState},
         },
+        message::{MessageUpdater, NormalFolderMessage, NormalLinkMessage},
+        normal::{FolderNormalState, LinkNormalState},
+        state::{AppState, NormalState},
     },
+    data::{dir::LinkDir, dirset::LinkDirSet},
 };
 
 pub fn folder_select(

@@ -5,17 +5,18 @@ pub mod float;
 pub mod normal;
 
 use crate::{
-    data::{dir::LinkDir, dirset::LinkDirSet},
-    ui::{
+    app::message::{EditMessage, MessageUpdater, NormalFolderMessage, NormalLinkMessage},
+    app::{
         App,
         float::Float,
-        message::{EditMessage, MessageUpdater, NormalFolderMessage, NormalLinkMessage},
-        state::{AppState, FolderNormalState, LinkNormalState, NormalState},
+        normal::{FolderNormalState, LinkNormalState},
+        state::{AppState, NormalState},
     },
+    data::{dir::LinkDir, dirset::LinkDirSet},
 };
 
 pub fn handle_key_event(app: &mut App, key: KeyEvent) {
-    match app.float.pop() {
+    match app.get_float() {
         None => handle_key_event_basic(app, key),
         Some(float) => handle_key_event_float(app, key, float),
     }
@@ -50,10 +51,10 @@ pub fn handle_key_event_basic(app: &mut App, key: KeyEvent) {
 
     // 在此处跳转状态
     if let Some(mod_change) = opt_mod {
-        app.state = mod_change;
+        app.set_state(mod_change);
     }
     if let Some(f) = float {
-        app.float.push(f);
+        app.add_float(f);
     }
 }
 
@@ -70,7 +71,7 @@ pub fn handle_key_event_float(app: &mut App, key: KeyEvent, float: Float) {
         Float::LinkSaveConfirm(state) => float::handle_link_save_confirm_key(app, key, state),
         Float::CorruptDataWarning(state) => float::handle_corrupt_data_warning_key(app, key, state),
     };
-    app.float.extend(float_action);
+    app.extend_float(float_action);
 }
 
 pub fn handle_normal_folder_key_event(key: KeyEvent) -> Option<NormalFolderMessage> {

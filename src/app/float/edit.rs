@@ -2,7 +2,10 @@ use std::ffi::OsStr;
 
 use tui_input::Input;
 
-use crate::ui::state::{FloatState, InputMode, InputPart};
+use crate::app::{
+    float::FloatState,
+    normal::{InputMode, InputPart},
+};
 
 #[derive(Debug)]
 pub struct FolderEditState {

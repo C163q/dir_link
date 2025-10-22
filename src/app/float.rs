@@ -1,17 +1,26 @@
 use std::{array, iter::Flatten};
 
 use crate::{
-    data::{dir::LinkDir, dirset::LinkDirSet},
-    ui::state::{
-        FolderNormalState, LinkNormalState,
-        confirm::{
-            ConfirmChoice, FolderDeleteConfirmState, FolderSaveConfirmState,
-            LinkDeleteConfirmState, LinkSaveConfirmState,
+    app::{
+        float::{
+            confirm::{
+                ConfirmChoice, FolderDeleteConfirmState, FolderSaveConfirmState,
+                LinkDeleteConfirmState, LinkSaveConfirmState,
+            },
+            edit::{FolderEditState, LinkEditState},
+            warning::{CorruptDataWarningState, WarningState},
         },
-        edit::{FolderEditState, LinkEditState},
-        warning::{CorruptDataWarningState, WarningState},
+        normal::{FolderNormalState, LinkNormalState},
     },
+    data::{dir::LinkDir, dirset::LinkDirSet},
 };
+
+pub mod common;
+pub mod confirm;
+pub mod edit;
+pub mod warning;
+
+pub use common::*;
 
 pub type FolderDeleteConfirmCallbackType =
     Box<dyn FnOnce(ConfirmChoice, &mut FolderNormalState, &mut LinkDirSet)>;

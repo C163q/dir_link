@@ -4,20 +4,21 @@ use ratatui::crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModif
 use tui_input::backend::crossterm::EventHandler;
 
 use crate::{
-    data::{
-        dir::LinkDir,
-        link::{self, Link},
-    },
-    ui::{
-        App,
-        float::{Float, FloatActionResult},
-        message::{EditMessage, FloatUpdater},
-        state::{
-            AppState, FolderNormalState, InputMode, InputPart, LinkNormalState, NormalState,
+    App,
+    app::message::{EditMessage, FloatUpdater},
+    app::{
+        float::{
+            Float, FloatActionResult,
             confirm::{FolderSaveConfirmState, LinkSaveConfirmState},
             edit::{FolderEditState, LinkEditState},
             warning::WarningState,
         },
+        normal::{FolderNormalState, InputMode, InputPart, LinkNormalState},
+        state::{AppState, NormalState},
+    },
+    data::{
+        dir::LinkDir,
+        link::{self, Link},
     },
 };
 
@@ -206,9 +207,9 @@ pub fn folder_quit_normal(
             FolderSaveConfirmState::new(state, select),
         ));
     }
-    app.state = AppState::Normal(Box::new(NormalState::Folder(
+    app.set_state(AppState::Normal(Box::new(NormalState::Folder(
         FolderNormalState::with_selected(select),
-    )));
+    ))));
     FloatUpdater::new()
 }
 
@@ -514,9 +515,8 @@ pub fn link_quit_normal(
             state, select,
         )));
     }
-    app.state = AppState::Normal(Box::new(NormalState::Link(LinkNormalState::with_selected(
-        state.from(),
-        select,
+    app.set_state(AppState::Normal(Box::new(NormalState::Link(
+        LinkNormalState::with_selected(state.from(), select),
     ))));
     FloatUpdater::new()
 }

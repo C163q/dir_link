@@ -1,8 +1,8 @@
 use ratatui::crossterm::event::KeyEvent;
 
-use crate::ui::{
-    float::Float,
-    state::{AppState, FloatState},
+use crate::app::{
+    float::{Float, FloatState},
+    state::AppState,
 };
 
 pub trait AppMessage {}
@@ -51,7 +51,7 @@ pub enum EditMessage {
     SwitchLeft,
     SwitchRight,
     SwitchOrConfirm,
-    Quit(Option<usize>, bool),  // (choice, ask_save)
+    Quit(Option<usize>, bool), // (choice, ask_save)
     Back,
 }
 

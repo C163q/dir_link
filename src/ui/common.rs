@@ -36,12 +36,7 @@ pub fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
         .split(popup_layout[1])[1] // Return the middle chunk
 }
 
-pub fn centered_text(
-    text: &str,
-    area: Rect,
-    additional_x: u16,
-    additional_y: u16,
-) -> Rect {
+pub fn centered_text(text: &str, area: Rect, additional_x: u16, additional_y: u16) -> Rect {
     let lines: Vec<_> = text.lines().collect();
     let lines_width: Vec<_> = lines
         .iter()
@@ -122,9 +117,6 @@ pub fn render_comfirm_choice<const N: usize>(
             } else {
                 Style::default()
             });
-        paragraph.render(
-            centered_text(message, choice_areas[idx], 2, 2),
-            buf
-        )
+        paragraph.render(centered_text(message, choice_areas[idx], 2, 2), buf)
     }
 }

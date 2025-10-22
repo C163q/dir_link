@@ -1,7 +1,7 @@
 use std::{env, fs};
 
 use color_eyre::eyre;
-use dir_link::Config;
+use dir_link::app::data::Config;
 use directories::BaseDirs;
 
 fn main() -> color_eyre::Result<()> {
