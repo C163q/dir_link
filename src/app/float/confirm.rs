@@ -8,6 +8,7 @@ use crate::{
             Float, FloatState,
             edit::{FolderEditState, LinkEditState},
         },
+        message::ConfirmMessage,
         normal::{FolderNormalState, LinkNormalState},
         state::{AppState, NormalState},
     },
@@ -51,9 +52,11 @@ where
     }
 }
 
-impl<F> FloatState for FolderDeleteConfirmState<F> where
-    F: FnOnce(ConfirmChoice, &mut FolderNormalState, &mut LinkDirSet)
+impl<F> FloatState for FolderDeleteConfirmState<F>
+where
+    F: FnOnce(ConfirmChoice, &mut FolderNormalState, &mut LinkDirSet),
 {
+    type Message = ConfirmMessage;
 }
 
 impl<F> FolderDeleteConfirmState<F>
@@ -114,9 +117,11 @@ where
     }
 }
 
-impl<F> FloatState for LinkDeleteConfirmState<F> where
-    F: FnOnce(ConfirmChoice, &mut LinkNormalState, &mut LinkDir)
+impl<F> FloatState for LinkDeleteConfirmState<F>
+where
+    F: FnOnce(ConfirmChoice, &mut LinkNormalState, &mut LinkDir),
 {
+    type Message = ConfirmMessage;
 }
 
 impl<F> LinkDeleteConfirmState<F>
@@ -168,7 +173,9 @@ pub struct FolderSaveConfirmState {
     select: Option<usize>,
 }
 
-impl FloatState for FolderSaveConfirmState {}
+impl FloatState for FolderSaveConfirmState {
+    type Message = ConfirmMessage;
+}
 
 impl FolderSaveConfirmState {
     pub fn new(state: FolderEditState, select: Option<usize>) -> Self {
@@ -229,7 +236,9 @@ pub struct LinkSaveConfirmState {
     select: Option<usize>,
 }
 
-impl FloatState for LinkSaveConfirmState {}
+impl FloatState for LinkSaveConfirmState {
+    type Message = ConfirmMessage;
+}
 
 impl LinkSaveConfirmState {
     pub fn new(state: LinkEditState, select: Option<usize>) -> Self {

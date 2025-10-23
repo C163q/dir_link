@@ -1,5 +1,6 @@
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 
+pub mod common;
 pub mod edit;
 pub mod float;
 pub mod normal;

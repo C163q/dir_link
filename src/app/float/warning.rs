@@ -1,11 +1,16 @@
-use crate::app::float::FloatState;
+use crate::app::{
+    float::FloatState,
+    message::{ChooseMessage, WarningMessage},
+};
 
 #[derive(Debug, Clone)]
 pub struct WarningState {
     message: String,
 }
 
-impl FloatState for WarningState {}
+impl FloatState for WarningState {
+    type Message = WarningMessage;
+}
 
 impl WarningState {
     pub fn new(message: String) -> Self {
@@ -38,7 +43,9 @@ pub struct CorruptDataWarningState {
     message: String,
 }
 
-impl FloatState for CorruptDataWarningState {}
+impl FloatState for CorruptDataWarningState {
+    type Message = ChooseMessage<bool>;
+}
 
 impl CorruptDataWarningState {
     pub fn new(message: String) -> Self {

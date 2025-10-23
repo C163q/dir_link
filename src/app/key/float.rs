@@ -2,7 +2,6 @@ use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyEventKind};
 
 use crate::{
     App,
-    app::message::{ChooseMessage, ConfirmMessage, FloatUpdater, WarningMessage},
     app::{
         float::{
             Float, FloatActionResult, FolderDeleteConfirmCallbackType,
@@ -13,26 +12,27 @@ use crate::{
             },
             warning::{CorruptDataWarningChoice, CorruptDataWarningState, WarningState},
         },
+        key::common,
+        message::{ChooseMessage, ConfirmMessage, FloatUpdater, WarningMessage},
         state::{AppState, NormalState},
     },
     data::{dir::LinkDir, dirset::LinkDirSet},
 };
 
+#[inline]
 pub fn handle_folder_delete_confirm_key(
     app: &mut App,
     key: KeyEvent,
-    mut state: FolderDeleteConfirmState<FolderDeleteConfirmCallbackType>,
+    state: FolderDeleteConfirmState<FolderDeleteConfirmCallbackType>,
 ) -> FloatActionResult {
-    let mut opt_msg = folder_delete_confirm_key(key);
-    while let Some(msg) = opt_msg {
-        let updater = folder_delete_confirm_message(app, state, msg);
-        opt_msg = updater.message;
-        match updater.state {
-            Some(s) => state = s,
-            None => return FloatActionResult::new(),
-        }
-    }
-    FloatActionResult::new().with_primary(Float::FolderDeleteConfirm(state))
+    common::handle_common_key(
+        app,
+        key,
+        state,
+        folder_delete_confirm_key,
+        folder_delete_confirm_message,
+        Float::FolderDeleteConfirm,
+    )
 }
 
 pub fn folder_delete_confirm_key(key: KeyEvent) -> Option<ConfirmMessage> {
@@ -56,7 +56,7 @@ pub fn folder_delete_confirm_message(
     app: &mut App,
     mut state: FolderDeleteConfirmState<FolderDeleteConfirmCallbackType>,
     message: ConfirmMessage,
-) -> FloatUpdater<ConfirmMessage, FolderDeleteConfirmState<FolderDeleteConfirmCallbackType>> {
+) -> FloatUpdater<FolderDeleteConfirmState<FolderDeleteConfirmCallbackType>> {
     match message {
         ConfirmMessage::Yes => {
             folder_delete_confirm_call(&mut app.state, &mut app.data, state, ConfirmChoice::Yes)
@@ -88,7 +88,7 @@ pub fn folder_delete_confirm_call(
     data: &mut LinkDirSet,
     mut state: FolderDeleteConfirmState<FolderDeleteConfirmCallbackType>,
     choice: ConfirmChoice,
-) -> FloatUpdater<ConfirmMessage, FolderDeleteConfirmState<FolderDeleteConfirmCallbackType>> {
+) -> FloatUpdater<FolderDeleteConfirmState<FolderDeleteConfirmCallbackType>> {
     match app_state {
         AppState::Normal(part) => match &mut **part {
             NormalState::Folder(folder_state) => {
@@ -102,29 +102,27 @@ pub fn folder_delete_confirm_call(
     }
 }
 
+#[inline]
 pub fn handle_link_delete_confirm_key(
     app: &mut App,
     key: KeyEvent,
-    mut state: LinkDeleteConfirmState<LinkDeleteConfirmCallbackType>,
+    state: LinkDeleteConfirmState<LinkDeleteConfirmCallbackType>,
 ) -> FloatActionResult {
-    // 它们的按键逻辑是一样的
-    let mut opt_msg = folder_delete_confirm_key(key);
-    while let Some(msg) = opt_msg {
-        let updater = link_delete_confirm_message(app, state, msg);
-        opt_msg = updater.message;
-        match updater.state {
-            Some(s) => state = s,
-            None => return FloatActionResult::new(),
-        }
-    }
-    FloatActionResult::new().with_primary(Float::LinkDeleteConfirm(state))
+    common::handle_common_key(
+        app,
+        key,
+        state,
+        folder_delete_confirm_key,
+        link_delete_confirm_message,
+        Float::LinkDeleteConfirm,
+    )
 }
 
 pub fn link_delete_confirm_message(
     app: &mut App,
     mut state: LinkDeleteConfirmState<LinkDeleteConfirmCallbackType>,
     message: ConfirmMessage,
-) -> FloatUpdater<ConfirmMessage, LinkDeleteConfirmState<LinkDeleteConfirmCallbackType>> {
+) -> FloatUpdater<LinkDeleteConfirmState<LinkDeleteConfirmCallbackType>> {
     match message {
         ConfirmMessage::Yes => link_delete_confirm_call(
             &mut app.state,
@@ -167,7 +165,7 @@ pub fn link_delete_confirm_call(
     data: &mut LinkDir,
     mut state: LinkDeleteConfirmState<LinkDeleteConfirmCallbackType>,
     choice: ConfirmChoice,
-) -> FloatUpdater<ConfirmMessage, LinkDeleteConfirmState<LinkDeleteConfirmCallbackType>> {
+) -> FloatUpdater<LinkDeleteConfirmState<LinkDeleteConfirmCallbackType>> {
     match app_state {
         AppState::Normal(part) => match &mut **part {
             NormalState::Link(link_state) => {
@@ -181,21 +179,16 @@ pub fn link_delete_confirm_call(
     }
 }
 
-pub fn handle_warning_key(
-    app: &mut App,
-    key: KeyEvent,
-    mut state: WarningState,
-) -> FloatActionResult {
-    let mut opt_msg = warning_key(key);
-    while let Some(msg) = opt_msg {
-        let updater = warning_message(app, state, msg);
-        opt_msg = updater.message;
-        match updater.state {
-            Some(s) => state = s,
-            None => return FloatActionResult::new(),
-        }
-    }
-    FloatActionResult::new().with_primary(Float::Warning(state))
+#[inline]
+pub fn handle_warning_key(app: &mut App, key: KeyEvent, state: WarningState) -> FloatActionResult {
+    common::handle_common_key(
+        app,
+        key,
+        state,
+        warning_key,
+        warning_message,
+        Float::Warning,
+    )
 }
 
 pub fn warning_key(key: KeyEvent) -> Option<WarningMessage> {
@@ -213,31 +206,26 @@ pub fn warning_message(
     _app: &mut App,
     _state: WarningState,
     message: WarningMessage,
-) -> FloatUpdater<WarningMessage, WarningState> {
+) -> FloatUpdater<WarningState> {
     match message {
         WarningMessage::Quit => FloatUpdater::new(),
     }
 }
 
+#[inline]
 pub fn handle_folder_save_confirm_key(
     app: &mut App,
     key: KeyEvent,
-    mut state: FolderSaveConfirmState,
+    state: FolderSaveConfirmState,
 ) -> FloatActionResult {
-    let mut new_float = None;
-    let mut opt_msg = folder_save_confirm_key(key);
-    while let Some(msg) = opt_msg {
-        let updater = folder_save_confirm_message(app, state, msg);
-        opt_msg = updater.message;
-        match updater.state {
-            Some(s) => state = s,
-            None => return FloatActionResult::new().with_optional_new(updater.float),
-        }
-        new_float = updater.float;
-    }
-    FloatActionResult::new()
-        .with_primary(Float::FolderSaveConfirm(state))
-        .with_optional_new(new_float)
+    common::handle_common_key(
+        app,
+        key,
+        state,
+        folder_save_confirm_key,
+        folder_save_confirm_message,
+        Float::FolderSaveConfirm,
+    )
 }
 
 pub fn folder_save_confirm_key(key: KeyEvent) -> Option<ConfirmMessage> {
@@ -261,7 +249,7 @@ pub fn folder_save_confirm_message(
     app: &mut App,
     mut state: FolderSaveConfirmState,
     message: ConfirmMessage,
-) -> FloatUpdater<ConfirmMessage, FolderSaveConfirmState> {
+) -> FloatUpdater<FolderSaveConfirmState> {
     match message {
         ConfirmMessage::Yes => folder_save_confirm_call(app, ConfirmChoice::Yes, state),
         ConfirmMessage::No | ConfirmMessage::Quit => {
@@ -290,30 +278,25 @@ pub fn folder_save_confirm_call(
     app: &mut App,
     choice: ConfirmChoice,
     mut state: FolderSaveConfirmState,
-) -> FloatUpdater<ConfirmMessage, FolderSaveConfirmState> {
+) -> FloatUpdater<FolderSaveConfirmState> {
     state.change_choice(choice);
     FloatUpdater::new().with_optional_float(state.call(app))
 }
 
+#[inline]
 pub fn handle_link_save_confirm_key(
     app: &mut App,
     key: KeyEvent,
-    mut state: LinkSaveConfirmState,
+    state: LinkSaveConfirmState,
 ) -> FloatActionResult {
-    let mut new_float = None;
-    let mut opt_msg = link_save_confirm_key(key);
-    while let Some(msg) = opt_msg {
-        let updater = link_save_confirm_message(app, state, msg);
-        opt_msg = updater.message;
-        match updater.state {
-            Some(s) => state = s,
-            None => return FloatActionResult::new().with_optional_new(updater.float),
-        }
-        new_float = updater.float;
-    }
-    FloatActionResult::new()
-        .with_primary(Float::LinkSaveConfirm(state))
-        .with_optional_new(new_float)
+    common::handle_common_key(
+        app,
+        key,
+        state,
+        link_save_confirm_key,
+        link_save_confirm_message,
+        Float::LinkSaveConfirm,
+    )
 }
 
 pub fn link_save_confirm_key(key: KeyEvent) -> Option<ConfirmMessage> {
@@ -337,7 +320,7 @@ pub fn link_save_confirm_message(
     app: &mut App,
     mut state: LinkSaveConfirmState,
     message: ConfirmMessage,
-) -> FloatUpdater<ConfirmMessage, LinkSaveConfirmState> {
+) -> FloatUpdater<LinkSaveConfirmState> {
     match message {
         ConfirmMessage::Yes => link_save_confirm_call(app, ConfirmChoice::Yes, state),
         ConfirmMessage::No | ConfirmMessage::Quit => {
@@ -366,30 +349,25 @@ pub fn link_save_confirm_call(
     app: &mut App,
     choice: ConfirmChoice,
     mut state: LinkSaveConfirmState,
-) -> FloatUpdater<ConfirmMessage, LinkSaveConfirmState> {
+) -> FloatUpdater<LinkSaveConfirmState> {
     state.change_choice(choice);
     FloatUpdater::new().with_optional_float(state.call(app))
 }
 
+#[inline]
 pub fn handle_corrupt_data_warning_key(
     app: &mut App,
     key: KeyEvent,
-    mut state: CorruptDataWarningState,
+    state: CorruptDataWarningState,
 ) -> FloatActionResult {
-    let mut new_float = None;
-    let mut opt_msg = corrupt_data_warning_key(key);
-    while let Some(msg) = opt_msg {
-        let updater = corrupt_data_warning_message(app, state, msg);
-        opt_msg = updater.message;
-        match updater.state {
-            Some(s) => state = s,
-            None => return FloatActionResult::new().with_optional_new(updater.float),
-        }
-        new_float = updater.float;
-    }
-    FloatActionResult::new()
-        .with_primary(Float::CorruptDataWarning(state))
-        .with_optional_new(new_float)
+    common::handle_common_key(
+        app,
+        key,
+        state,
+        corrupt_data_warning_key,
+        corrupt_data_warning_message,
+        Float::CorruptDataWarning,
+    )
 }
 
 pub fn corrupt_data_warning_key(key: KeyEvent) -> Option<ChooseMessage<bool>> {
@@ -416,7 +394,7 @@ pub fn corrupt_data_warning_message(
     app: &mut App,
     mut state: CorruptDataWarningState,
     message: ChooseMessage<bool>,
-) -> FloatUpdater<ChooseMessage<bool>, CorruptDataWarningState> {
+) -> FloatUpdater<CorruptDataWarningState> {
     match message {
         ChooseMessage::Quit(choice) => {
             if !choice {

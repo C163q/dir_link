@@ -4,6 +4,7 @@ use tui_input::Input;
 
 use crate::app::{
     float::FloatState,
+    message::EditMessage,
     normal::{InputMode, InputPart},
 };
 
@@ -14,7 +15,9 @@ pub struct FolderEditState {
     input: Input,
 }
 
-impl FloatState for FolderEditState {}
+impl FloatState for FolderEditState {
+    type Message = EditMessage;
+}
 
 impl FolderEditState {
     pub fn new(selected: Option<usize>) -> Self {
@@ -68,7 +71,9 @@ pub struct LinkEditState {
     input: (Input, Input),
 }
 
-impl FloatState for LinkEditState {}
+impl FloatState for LinkEditState {
+    type Message = EditMessage;
+}
 
 impl LinkEditState {
     pub fn new(from: usize, selected: Option<usize>) -> Self {

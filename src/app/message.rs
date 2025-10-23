@@ -129,19 +129,19 @@ impl<M: AppMessage> MessageUpdater<M> {
     }
 }
 
-pub struct FloatUpdater<M: AppMessage, S: FloatState> {
-    pub message: Option<M>,
+pub struct FloatUpdater<S: FloatState> {
+    pub message: Option<S::Message>,
     pub state: Option<S>,
     pub float: Option<Float>,
 }
 
-impl<M: AppMessage, S: FloatState> Default for FloatUpdater<M, S> {
+impl<S: FloatState> Default for FloatUpdater<S> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<M: AppMessage, S: FloatState> FloatUpdater<M, S> {
+impl<S: FloatState> FloatUpdater<S> {
     pub fn new() -> Self {
         Self {
             message: None,
@@ -150,7 +150,7 @@ impl<M: AppMessage, S: FloatState> FloatUpdater<M, S> {
         }
     }
 
-    pub fn with_message(mut self, message: M) -> Self {
+    pub fn with_message(mut self, message: S::Message) -> Self {
         self.message = Some(message);
         self
     }
