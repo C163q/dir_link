@@ -1,11 +1,51 @@
 use std::{io, path::PathBuf};
 
-use crate::data::link::Link;
+use crate::data::{dirset::LinkDirSet, link::Link};
+
+pub struct RuntimeError {
+    // Some if fails to read
+    pub read_data: Option<io::Error>,
+    // Some if fails to save
+    pub save: Option<io::Error>,
+    // Some if fails to write link data
+    pub write_link: Option<io::Error>,
+}
+
+impl Default for RuntimeError {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl RuntimeError {
+    pub fn new() -> Self {
+        Self {
+            read_data: None,
+            save: None,
+            write_link: None,
+        }
+    }
+
+    pub fn with_read_data(mut self, err: io::Error) -> Self {
+        self.read_data = Some(err);
+        self
+    }
+
+    pub fn with_save(mut self, err: io::Error) -> Self {
+        self.save = Some(err);
+        self
+    }
+
+    pub fn with_write_link(mut self, err: io::Error) -> Self {
+        self.write_link = Some(err);
+        self
+    }
+}
 
 pub struct AppData {
     pub cursor: Option<(u16, u16)>,
     // TODO: handle failure
-    pub success: io::Result<()>,
+    pub runtime_error: RuntimeError,
 }
 
 pub struct AppOption {
@@ -22,6 +62,7 @@ pub struct Config {
 pub struct DataTransfer {
     pub link: Option<Link>,
     pub config: Option<Config>,
+    pub data: Option<LinkDirSet>,
 }
 
 impl Default for DataTransfer {
@@ -35,6 +76,7 @@ impl DataTransfer {
         Self {
             link: None,
             config: None,
+            data: None,
         }
     }
 
@@ -42,16 +84,18 @@ impl DataTransfer {
         Self {
             link: Some(link),
             config: None,
+            data: None,
         }
     }
 
-    pub fn with_config(path: PathBuf) -> Self {
+    pub fn with_path(path: PathBuf) -> Self {
         Self {
             link: None,
             config: Some(Config {
                 path: Some(path),
                 save: true,
             }),
+            data: None,
         }
     }
 

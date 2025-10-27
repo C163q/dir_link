@@ -9,7 +9,7 @@ use ratatui::{Terminal, prelude::Backend};
 use crate::{
     app::{
         App,
-        data::{Config, DataTransfer},
+        data::{Config, DataTransfer, RuntimeError},
     },
     data::{dirset::LinkDirSet, link::Link},
 };
@@ -37,13 +37,20 @@ pub fn get_data(data_path: &Path) -> io::Result<LinkDirSet> {
     }
 }
 
+pub fn try_save(save: bool, data_path: &Path, data: &LinkDirSet) -> io::Result<()> {
+    if save {
+        let mut file = BufWriter::new(File::create(data_path)?);
+        file.write_all(serde_json::to_vec(data)?.as_slice())?;
+    }
+    Ok(())
+}
+
 pub fn run_app<B: Backend>(
     data_path: &Path,
-    terminal: Terminal<B>,
+    mut terminal: Terminal<B>,
     mut config: Config,
 ) -> io::Result<Option<Link>> {
-    // TODO: warn if data file is corrupted
-    let (data, success) = match get_data(data_path) {
+    let (data, read_result) = match get_data(data_path) {
         Ok(data) => (data, Ok(())),
         Err(err) => (LinkDirSet::new(), Err(err)),
     };
@@ -52,16 +59,23 @@ pub fn run_app<B: Backend>(
     let data_transfer = DataTransfer {
         config: Some(config),
         link: None,
+        data: None,
     };
 
-    let data = App::new(data).run(terminal, success, data_transfer)?;
+    let mut runtime = RuntimeError::new();
+    runtime.read_data = read_result.err();
 
-    if data.0.config.as_ref().unwrap().save {
-        let mut file = BufWriter::new(File::create(data_path)?);
-        file.write_all(serde_json::to_vec(&data.1)?.as_slice())?;
-    }
+    let mut transfer = App::new(data).run(&mut terminal, runtime, data_transfer)?;
+    let link_data_set = transfer.data.take().unwrap();
 
-    if let Some(link) = data.0.link() {
+    // TODO: handle save error
+    let _result = try_save(
+        transfer.config.as_ref().unwrap().save,
+        data_path,
+        &link_data_set,
+    );
+
+    if let Some(link) = transfer.link() {
         path.map_or_else(
             || Ok(Some(link.clone())),
             |path| {

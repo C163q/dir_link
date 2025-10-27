@@ -10,7 +10,10 @@
 cargo build --release
 ```
 
-将编译后的文件移动到`$PATH`中包含的目录中。
+使用如下命令安装：
+```shell
+cargo install --path .
+```
 
 将`shell`文件夹中的对应脚本添加到SHELL的配置文件中。
 例如，如果你使用的是`bash`，可以将`bash.sh`中的内容加入到`.bashrc`中。

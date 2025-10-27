@@ -7,7 +7,7 @@ use ratatui::{
     crossterm::event::{self, Event},
 };
 
-use crate::app::data::{AppData, AppOption, DataTransfer};
+use crate::app::data::{AppData, AppOption, DataTransfer, RuntimeError};
 use crate::app::float::Float;
 use crate::app::float::warning::CorruptDataWarningState;
 use crate::app::normal::FolderNormalState;
@@ -139,27 +139,28 @@ impl App {
         }
     }
 
-    fn check_corrept_data(&mut self, data: &AppData) {
-        if let Err(err) = &data.success {
+    fn check_corrept_data(&mut self, data: &mut AppData) {
+        if let Some(err) = &data.runtime_error.read_data {
             self.option.save = false;
             self.float
                 .push(Float::CorruptDataWarning(CorruptDataWarningState::new(
                     err.to_string(),
                 )));
+            data.runtime_error.read_data = None;
         }
     }
 
     pub fn run<B: Backend>(
         mut self,
-        mut terminal: Terminal<B>,
-        success: io::Result<()>,
+        terminal: &mut Terminal<B>,
+        runtime: RuntimeError,
         mut data_transfer: DataTransfer,
-    ) -> io::Result<(DataTransfer, LinkDirSet)> {
+    ) -> io::Result<DataTransfer> {
         let mut data = AppData {
             cursor: None,
-            success,
+            runtime_error: runtime,
         };
-        self.check_corrept_data(&data);
+        self.check_corrept_data(&mut data);
 
         loop {
             terminal.draw(|f| {
@@ -178,7 +179,8 @@ impl App {
         if let Some(config) = &mut data_transfer.config {
             config.save = self.option.save;
         }
-        Ok((data_transfer, self.data))
+        data_transfer.data = Some(self.data);
+        Ok(data_transfer)
     }
 
     pub fn handle_event(&mut self) -> io::Result<()> {
