@@ -43,9 +43,59 @@ impl RuntimeError {
 }
 
 pub struct AppData {
-    pub cursor: Option<(u16, u16)>,
-    // TODO: handle failure
-    pub runtime_error: RuntimeError,
+    pub cursor: CursorCache,
+}
+
+impl Default for AppData {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl AppData {
+    pub fn new() -> Self {
+        Self {
+            cursor: CursorCache::new(),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct CursorCache {
+    outdated: bool,
+    pos: (u16, u16),
+}
+
+impl Default for CursorCache {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl CursorCache {
+    pub fn new() -> Self {
+        Self {
+            outdated: true,
+            pos: (0, 0),
+        }
+    }
+
+    pub fn update(&mut self, x: u16, y: u16) {
+        self.pos = (x, y);
+        self.outdated = false;
+    }
+
+    pub fn get_pos(&self) -> Option<(u16, u16)> {
+        if self.outdated { None } else { Some(self.pos) }
+    }
+
+    pub fn outdate(&mut self) {
+        self.outdated = true;
+    }
+
+    pub fn is_outdated(&self) -> bool {
+        self.outdated
+    }
 }
 
 pub struct AppOption {

@@ -11,7 +11,7 @@ pub struct Debugger {
 
 impl Debugger {
     pub fn new<P: AsRef<Path>>(path: P) -> io::Result<Self> {
-        let out = UnsafeCell::new(BufWriter::new(File::create(path)?));
+        let out = UnsafeCell::new(BufWriter::new(File::options().append(true).open(path)?));
         Ok(Self { out })
     }
 

@@ -26,13 +26,12 @@ pub struct App {
     pub state: AppState,
     pub data: LinkDirSet,
     pub option: AppOption,
+    pub cache: AppData,
     float: Vec<Float>,
 }
 
-impl StatefulWidget for &mut App {
-    type State = AppData;
-    fn render(self, area: Rect, buf: &mut Buffer, data: &mut Self::State) {
-        data.cursor = None;
+impl Widget for &mut App {
+    fn render(self, area: Rect, buf: &mut Buffer) {
         ui::render_main_border(area, buf);
 
         let chunks = Layout::default()
@@ -58,14 +57,12 @@ impl StatefulWidget for &mut App {
                 Float::FolderEdit(state) => {
                     let area = ui::common::centered_rect(50, 25, area);
                     Clear.render(area, buf);
-                    let cursor = ui::render_folder_edit(state, area, buf);
-                    data.cursor = cursor;
+                    ui::render_folder_edit(state, area, buf, &mut self.cache.cursor);
                 }
                 Float::LinkEdit(state) => {
                     let area = ui::common::centered_rect(60, 30, area);
                     Clear.render(area, buf);
-                    let cursor = ui::render_link_edit(state, area, buf);
-                    data.cursor = cursor;
+                    ui::render_link_edit(state, area, buf, &mut self.cache.cursor);
                 }
                 Float::FolderDeleteConfirm(state) => {
                     let area = ui::common::centered_rect(50, 30, area);
@@ -86,13 +83,25 @@ impl StatefulWidget for &mut App {
                     let edit_area = ui::common::centered_rect(50, 25, area);
                     let area = ui::common::centered_rect(50, 30, area);
                     Clear.render(area, buf);
-                    ui::render_folder_save_confirm_float(state, edit_area, area, buf);
+                    ui::render_folder_save_confirm_float(
+                        state,
+                        edit_area,
+                        area,
+                        buf,
+                        &mut self.cache.cursor,
+                    );
                 }
                 Float::LinkSaveConfirm(state) => {
                     let edit_area = ui::common::centered_rect(60, 30, area);
                     let area = ui::common::centered_rect(50, 30, area);
                     Clear.render(area, buf);
-                    ui::render_link_save_confirm_float(state, edit_area, area, buf);
+                    ui::render_link_save_confirm_float(
+                        state,
+                        edit_area,
+                        area,
+                        buf,
+                        &mut self.cache.cursor,
+                    );
                 }
                 Float::CorruptDataWarning(state) => {
                     let area = ui::common::centered_rect(50, 40, area);
@@ -135,37 +144,34 @@ impl App {
             state: AppState::Normal(Box::new(NormalState::Folder(FolderNormalState::new()))),
             data,
             float: Vec::new(),
+            cache: AppData::new(),
             option: AppOption { save: true },
         }
     }
 
-    fn check_corrept_data(&mut self, data: &mut AppData) {
-        if let Some(err) = &data.runtime_error.read_data {
+    fn check_corrept_data(&mut self, error: &mut RuntimeError) {
+        if let Some(err) = &error.read_data {
             self.option.save = false;
             self.float
                 .push(Float::CorruptDataWarning(CorruptDataWarningState::new(
                     err.to_string(),
                 )));
-            data.runtime_error.read_data = None;
+            error.read_data = None;
         }
     }
 
     pub fn run<B: Backend>(
         mut self,
         terminal: &mut Terminal<B>,
-        runtime: RuntimeError,
+        mut runtime: RuntimeError,
         mut data_transfer: DataTransfer,
     ) -> io::Result<DataTransfer> {
-        let mut data = AppData {
-            cursor: None,
-            runtime_error: runtime,
-        };
-        self.check_corrept_data(&mut data);
+        self.check_corrept_data(&mut runtime);
 
         loop {
             terminal.draw(|f| {
-                f.render_stateful_widget(&mut self, f.area(), &mut data);
-                if let Some(pos) = data.cursor {
+                f.render_widget(&mut self, f.area());
+                if let Some(pos) = self.cache.cursor.get_pos() {
                     f.set_cursor_position(pos);
                 }
             })?;

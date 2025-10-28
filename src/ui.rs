@@ -13,6 +13,7 @@ use tui_input::Input;
 use unicode_width::UnicodeWidthStr;
 
 use crate::app::App;
+use crate::app::data::CursorCache;
 use crate::app::float::confirm::{
     ConfirmChoice, FolderDeleteConfirmState, FolderSaveConfirmState, LinkDeleteConfirmState,
     LinkSaveConfirmState,
@@ -136,7 +137,8 @@ pub fn render_input(
     area: Rect,
     buf: &mut Buffer,
     ghost_text: Option<&str>,
-) -> Option<(u16, u16)> {
+    cursor_cache: &mut CursorCache,
+) {
     let chunks = Layout::default()
         .constraints([Constraint::Length(1), Constraint::Min(3)])
         .split(area);
@@ -179,7 +181,7 @@ pub fn render_input(
     };
     input_text.render(chunks[1], buf);
 
-    if input_mode == InputMode::Editing {
+    if input_mode == InputMode::Editing && cursor_cache.is_outdated() {
         // FIXME:
         // 目前仍然存在多宽度字符时光标位置计算不准确的问题
         //
@@ -230,9 +232,7 @@ pub fn render_input(
             .saturating_sub(1)
             .min(text_area.height as usize) as u16;
 
-        Some((text_area.x + x_offset, text_area.y + y_offset))
-    } else {
-        None
+        cursor_cache.update(text_area.x + x_offset, text_area.y + y_offset);
     }
 }
 
@@ -259,7 +259,8 @@ pub fn render_folder_edit(
     state: &mut FolderEditState,
     area: Rect,
     buf: &mut Buffer,
-) -> Option<(u16, u16)> {
+    cursor_cache: &mut CursorCache,
+) {
     render_input_block(state.selected(), state.mode(), area, buf);
 
     let mode = state.mode().to_owned();
@@ -275,14 +276,16 @@ pub fn render_folder_edit(
         chunk,
         buf,
         None,
-    )
+        cursor_cache,
+    );
 }
 
 pub fn render_link_edit(
     state: &mut LinkEditState,
     area: Rect,
     buf: &mut Buffer,
-) -> Option<(u16, u16)> {
+    cursor_cache: &mut CursorCache,
+) {
     render_input_block(state.selected(), state.mode(), area, buf);
 
     let mode = state.mode().to_owned();
@@ -299,24 +302,24 @@ pub fn render_link_edit(
         .constraints([Constraint::Percentage(40), Constraint::Percentage(60)])
         .margin(1)
         .split(area);
-    let key_pos = render_input(
+    render_input(
         state.key_input_mut(),
         "Input Link Name",
         key_mode,
         chunks[0],
         buf,
         None,
+        cursor_cache,
     );
-    let value_pos = render_input(
+    render_input(
         state.value_input_mut(),
         "Input Link Path",
         value_mode,
         chunks[1],
         buf,
         Some("empty for current directory"),
+        cursor_cache,
     );
-
-    key_pos.or(value_pos)
 }
 
 pub fn render_confirm_yes_no_choice(area: Rect, buf: &mut Buffer, choice: ConfirmChoice) {
@@ -423,8 +426,9 @@ pub fn render_folder_save_confirm_float(
     edit_area: Rect,
     area: Rect,
     buf: &mut Buffer,
+    cursor_cache: &mut CursorCache,
 ) {
-    render_folder_edit(state.last_state_mut(), edit_area, buf);
+    render_folder_edit(state.last_state_mut(), edit_area, buf, cursor_cache);
 
     Clear.render(area, buf);
     render_confirm_border(area, buf);
@@ -445,8 +449,9 @@ pub fn render_link_save_confirm_float(
     edit_area: Rect,
     area: Rect,
     buf: &mut Buffer,
+    cursor_cache: &mut CursorCache,
 ) {
-    render_link_edit(state.last_state_mut(), edit_area, buf);
+    render_link_edit(state.last_state_mut(), edit_area, buf, cursor_cache);
 
     Clear.render(area, buf);
     render_confirm_border(area, buf);

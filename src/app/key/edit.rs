@@ -1,11 +1,12 @@
 use std::path::PathBuf;
 
 use ratatui::crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
-use tui_input::backend::crossterm::EventHandler;
+use tui_input::{Input, backend::crossterm::EventHandler};
 
 use crate::{
     App,
     app::{
+        data::CursorCache,
         float::{
             Float, FloatActionResult,
             confirm::{FolderSaveConfirmState, LinkSaveConfirmState},
@@ -22,6 +23,12 @@ use crate::{
         link::{self, Link},
     },
 };
+
+#[inline]
+pub fn input_handle_key(input: &mut Input, event: &Event, cursor_cache: &mut CursorCache) {
+    input.handle_event(event);
+    cursor_cache.outdate();
+}
 
 #[inline]
 pub fn handle_edit_folder_key(
@@ -55,7 +62,7 @@ pub fn edit_folder_message(
                 updater.with_state(state)
             }
             EditMessage::Edit => {
-                let updater = folder_edit_normal(&mut state);
+                let updater = folder_edit_normal(app, &mut state);
                 updater.with_state(state)
             }
             EditMessage::Confirm => {
@@ -78,7 +85,7 @@ pub fn edit_folder_message(
             }
             EditMessage::Edit => FloatUpdater::new().with_state(state),
             EditMessage::Confirm => {
-                let updater = folder_confirm_editing(&mut state);
+                let updater = folder_confirm_editing(app, &mut state);
                 updater.with_state(state)
             }
             EditMessage::Switch => FloatUpdater::new().with_state(state),
@@ -92,7 +99,7 @@ pub fn edit_folder_message(
                 updater.with_state(state)
             }
             EditMessage::Back => {
-                let updater = folder_back_editing(&mut state);
+                let updater = folder_back_editing(app, &mut state);
                 updater.with_state(state)
             }
         },
@@ -131,7 +138,11 @@ pub fn folder_handle_input_normal(
     }
 }
 
-pub fn folder_edit_normal(state: &mut FolderEditState) -> FloatUpdater<FolderEditState> {
+pub fn folder_edit_normal(
+    app: &mut App,
+    state: &mut FolderEditState,
+) -> FloatUpdater<FolderEditState> {
+    app.cache.cursor.outdate();
     state.switch_mode();
     FloatUpdater::new()
 }
@@ -208,7 +219,7 @@ pub fn folder_quit_normal(
 }
 
 pub fn folder_handle_input_editing(
-    _app: &mut App,
+    app: &mut App,
     state: &mut FolderEditState,
     key_event: KeyEvent,
 ) -> FloatUpdater<FolderEditState> {
@@ -222,19 +233,23 @@ pub fn folder_handle_input_editing(
                 KeyCode::Esc => FloatUpdater::new().with_message(EditMessage::Back),
                 KeyCode::Enter => FloatUpdater::new().with_message(EditMessage::Confirm),
                 _ => {
-                    state.input_mut().handle_event(&event);
+                    input_handle_key(state.input_mut(), &event, &mut app.cache.cursor);
                     FloatUpdater::new()
                 }
             },
         }
     } else {
-        state.input_mut().handle_event(&event);
+        input_handle_key(state.input_mut(), &event, &mut app.cache.cursor);
         FloatUpdater::new()
     }
 }
 
-pub fn folder_confirm_editing(state: &mut FolderEditState) -> FloatUpdater<FolderEditState> {
+pub fn folder_confirm_editing(
+    app: &mut App,
+    state: &mut FolderEditState,
+) -> FloatUpdater<FolderEditState> {
     state.switch_mode();
+    app.cache.cursor.outdate();
     FloatUpdater::new().with_message(EditMessage::Confirm)
 }
 
@@ -250,11 +265,16 @@ pub fn folder_quit_editing(
         select.or(Some(0))
     };
     state.switch_mode();
+    app.cache.cursor.outdate();
     FloatUpdater::new().with_message(EditMessage::Quit(select, ask_save))
 }
 
-pub fn folder_back_editing(state: &mut FolderEditState) -> FloatUpdater<FolderEditState> {
+pub fn folder_back_editing(
+    app: &mut App,
+    state: &mut FolderEditState,
+) -> FloatUpdater<FolderEditState> {
     state.switch_mode();
+    app.cache.cursor.outdate();
     FloatUpdater::new()
 }
 
@@ -290,7 +310,7 @@ pub fn edit_link_message(
                 updater.with_state(state)
             }
             EditMessage::Edit => {
-                let updater = link_edit_normal(&mut state);
+                let updater = link_edit_normal(app, &mut state);
                 updater.with_state(state)
             }
             EditMessage::Confirm => {
@@ -323,23 +343,23 @@ pub fn edit_link_message(
             }
             EditMessage::Edit => FloatUpdater::new().with_state(state),
             EditMessage::Confirm => {
-                let updater = link_confirm_editing(&mut state);
+                let updater = link_confirm_editing(app, &mut state);
                 updater.with_state(state)
             }
             EditMessage::Switch => {
-                let updater = link_switch_editing(&mut state);
+                let updater = link_switch_editing(app, &mut state);
                 updater.with_state(state)
             }
             EditMessage::SwitchLeft => {
-                let updater = link_switch_left_editing(&mut state);
+                let updater = link_switch_left_editing(app, &mut state);
                 updater.with_state(state)
             }
             EditMessage::SwitchRight => {
-                let updater = link_switch_right_editing(&mut state);
+                let updater = link_switch_right_editing(app, &mut state);
                 updater.with_state(state)
             }
             EditMessage::SwitchOrConfirm => {
-                let updater = link_switch_or_confirm_editing(&mut state);
+                let updater = link_switch_or_confirm_editing(app, &mut state);
                 updater.with_state(state)
             }
             EditMessage::Quit(select, ask_save) => {
@@ -347,7 +367,7 @@ pub fn edit_link_message(
                 updater.with_state(state)
             }
             EditMessage::Back => {
-                let updater = link_back_editing(&mut state);
+                let updater = link_back_editing(app, &mut state);
                 updater.with_state(state)
             }
         },
@@ -391,8 +411,9 @@ pub fn link_handle_input_normal(
     }
 }
 
-pub fn link_edit_normal(state: &mut LinkEditState) -> FloatUpdater<LinkEditState> {
+pub fn link_edit_normal(app: &mut App, state: &mut LinkEditState) -> FloatUpdater<LinkEditState> {
     state.switch_mode();
+    app.cache.cursor.outdate();
     FloatUpdater::new()
 }
 
@@ -501,7 +522,7 @@ pub fn link_quit_normal(
 }
 
 pub fn link_handle_input_editing(
-    _app: &mut App,
+    app: &mut App,
     state: &mut LinkEditState,
     key_event: KeyEvent,
 ) -> FloatUpdater<LinkEditState> {
@@ -517,8 +538,12 @@ pub fn link_handle_input_editing(
                 KeyCode::Enter => FloatUpdater::new().with_message(EditMessage::SwitchOrConfirm),
                 _ => {
                     match state.part() {
-                        InputPart::Key => state.key_input_mut().handle_event(&event),
-                        InputPart::Value => state.value_input_mut().handle_event(&event),
+                        InputPart::Key => {
+                            input_handle_key(state.key_input_mut(), &event, &mut app.cache.cursor)
+                        }
+                        InputPart::Value => {
+                            input_handle_key(state.value_input_mut(), &event, &mut app.cache.cursor)
+                        }
                     };
                     FloatUpdater::new()
                 }
@@ -526,33 +551,57 @@ pub fn link_handle_input_editing(
         }
     } else {
         match state.part() {
-            InputPart::Key => state.key_input_mut().handle_event(&event),
-            InputPart::Value => state.value_input_mut().handle_event(&event),
+            InputPart::Key => {
+                input_handle_key(state.key_input_mut(), &event, &mut app.cache.cursor)
+            }
+            InputPart::Value => {
+                input_handle_key(state.value_input_mut(), &event, &mut app.cache.cursor)
+            }
         };
         FloatUpdater::new()
     }
 }
 
-pub fn link_confirm_editing(state: &mut LinkEditState) -> FloatUpdater<LinkEditState> {
+pub fn link_confirm_editing(
+    app: &mut App,
+    state: &mut LinkEditState,
+) -> FloatUpdater<LinkEditState> {
     state.switch_mode();
+    app.cache.cursor.outdate();
     FloatUpdater::new().with_message(EditMessage::Confirm)
 }
 
 #[inline]
-pub fn link_switch_editing(state: &mut LinkEditState) -> FloatUpdater<LinkEditState> {
+pub fn link_switch_editing(
+    app: &mut App,
+    state: &mut LinkEditState,
+) -> FloatUpdater<LinkEditState> {
+    app.cache.cursor.outdate();
     link_switch_normal(state)
 }
 
 #[inline]
-pub fn link_switch_left_editing(state: &mut LinkEditState) -> FloatUpdater<LinkEditState> {
+pub fn link_switch_left_editing(
+    app: &mut App,
+    state: &mut LinkEditState,
+) -> FloatUpdater<LinkEditState> {
+    app.cache.cursor.outdate();
     link_switch_left_normal(state)
 }
 
-pub fn link_switch_right_editing(state: &mut LinkEditState) -> FloatUpdater<LinkEditState> {
+pub fn link_switch_right_editing(
+    app: &mut App,
+    state: &mut LinkEditState,
+) -> FloatUpdater<LinkEditState> {
+    app.cache.cursor.outdate();
     link_switch_right_normal(state)
 }
 
-pub fn link_switch_or_confirm_editing(state: &mut LinkEditState) -> FloatUpdater<LinkEditState> {
+pub fn link_switch_or_confirm_editing(
+    app: &mut App,
+    state: &mut LinkEditState,
+) -> FloatUpdater<LinkEditState> {
+    app.cache.cursor.outdate();
     match state.part() {
         InputPart::Key => {
             state.set_part(InputPart::Value);
@@ -571,7 +620,8 @@ pub fn link_quit_editing(
     FloatUpdater::new().with_message(EditMessage::Quit(select, ask_save))
 }
 
-pub fn link_back_editing(state: &mut LinkEditState) -> FloatUpdater<LinkEditState> {
+pub fn link_back_editing(app: &mut App, state: &mut LinkEditState) -> FloatUpdater<LinkEditState> {
+    app.cache.cursor.outdate();
     state.switch_mode();
     FloatUpdater::new()
 }
