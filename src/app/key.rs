@@ -71,6 +71,7 @@ pub fn handle_key_event_float(app: &mut App, key: KeyEvent, float: Float) {
         Float::FolderSaveConfirm(state) => float::handle_folder_save_confirm_key(app, key, state),
         Float::LinkSaveConfirm(state) => float::handle_link_save_confirm_key(app, key, state),
         Float::CorruptDataWarning(state) => float::handle_corrupt_data_warning_key(app, key, state),
+        Float::Help(state) => float::handle_help_key(app, key, state),
     };
     app.extend_float(float_action);
 }

@@ -19,6 +19,7 @@ use crate::app::float::confirm::{
     LinkSaveConfirmState,
 };
 use crate::app::float::edit::{FolderEditState, LinkEditState};
+use crate::app::float::help::HelpState;
 use crate::app::float::warning::{CorruptDataWarningChoice, CorruptDataWarningState, WarningState};
 use crate::app::normal::{FolderNormalState, InputMode, InputPart, LinkNormalState};
 use crate::data::dir::LinkDir;
@@ -496,4 +497,29 @@ pub fn render_corrupt_data_warning_float(
         CorruptDataWarningChoice::NewData => 1,
     };
     common::render_comfirm_choice(chunks[1], buf, messages, choice, (1, 2));
+}
+
+pub fn render_help_float(state: &HelpState, area: Rect, buf: &mut Buffer) {
+    let hint_message = "Press <Esc>/<Q> to Quit Help";
+
+    let chunk = common::render_border(
+        Some(Line::from("Help").style(Style::default().fg(Color::Yellow))),
+        Some(Line::from(hint_message).style(Style::default().fg(Color::LightGreen))),
+        Style::default().fg(Color::White),
+        area,
+        buf,
+    );
+
+    let rows = state.iter().map(|entry| {
+        Row::new([
+            Cell::from(Text::from(entry.key()).set_style(Color::LightGreen)),
+            Cell::from(Text::from(entry.value()).set_style(Color::White)),
+        ])
+    });
+    let table = Table::new(
+        rows,
+        [Constraint::Percentage(30), Constraint::Percentage(70)],
+    );
+
+    <Table as Widget>::render(table, chunk, buf);
 }

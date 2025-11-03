@@ -53,6 +53,7 @@ pub enum EditMessage {
     SwitchOrConfirm,
     Quit(Option<usize>, bool), // (choice, ask_save)
     Back,
+    Help,
 }
 
 impl AppMessage for EditMessage {}

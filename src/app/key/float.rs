@@ -10,6 +10,7 @@ use crate::{
                 ConfirmChoice, FolderDeleteConfirmState, FolderSaveConfirmState,
                 LinkDeleteConfirmState, LinkSaveConfirmState,
             },
+            help::HelpState,
             warning::{CorruptDataWarningChoice, CorruptDataWarningState, WarningState},
         },
         key::common,
@@ -438,5 +439,31 @@ pub fn corrupt_data_warning_message(
             state.switch_back();
             FloatUpdater::new().with_state(state)
         }
+    }
+}
+
+#[inline]
+pub fn handle_help_key(app: &mut App, key: KeyEvent, state: HelpState) -> FloatActionResult {
+    common::handle_common_key(app, key, state, help_key, help_message, Float::Help)
+}
+
+pub fn help_key(key: KeyEvent) -> Option<WarningMessage> {
+    if key.kind == KeyEventKind::Press {
+        match key.code {
+            KeyCode::Esc | KeyCode::Char('q') | KeyCode::Char('Q') => Some(WarningMessage::Quit),
+            _ => None,
+        }
+    } else {
+        None
+    }
+}
+
+pub fn help_message(
+    _app: &mut App,
+    _state: HelpState,
+    message: WarningMessage,
+) -> FloatUpdater<HelpState> {
+    match message {
+        WarningMessage::Quit => FloatUpdater::new(),
     }
 }

@@ -8,6 +8,7 @@ use crate::{
                 LinkDeleteConfirmState, LinkSaveConfirmState,
             },
             edit::{FolderEditState, LinkEditState},
+            help::HelpState,
             warning::{CorruptDataWarningState, WarningState},
         },
         normal::{FolderNormalState, LinkNormalState},
@@ -18,6 +19,7 @@ use crate::{
 pub mod common;
 pub mod confirm;
 pub mod edit;
+pub mod help;
 pub mod warning;
 
 pub use common::*;
@@ -38,6 +40,7 @@ pub enum Float {
     FolderSaveConfirm(FolderSaveConfirmState),
     LinkSaveConfirm(LinkSaveConfirmState),
     CorruptDataWarning(CorruptDataWarningState),
+    Help(HelpState),
 }
 
 #[derive(Debug)]

@@ -11,6 +11,7 @@ use crate::{
             Float, FloatActionResult,
             confirm::{FolderSaveConfirmState, LinkSaveConfirmState},
             edit::{FolderEditState, LinkEditState},
+            help::{HelpEntry, HelpState},
             warning::WarningState,
         },
         key::common,
@@ -77,6 +78,10 @@ pub fn edit_folder_message(
                 .with_state(state),
             EditMessage::Quit(select, ask_save) => folder_quit_normal(app, state, select, ask_save),
             EditMessage::Back => FloatUpdater::new().with_state(state),
+            EditMessage::Help => {
+                let updater = folder_help_normal(app, &mut state);
+                updater.with_state(state)
+            }
         },
         InputMode::Editing => match msg {
             EditMessage::HandleInput(key_event) => {
@@ -102,6 +107,7 @@ pub fn edit_folder_message(
                 let updater = folder_back_editing(app, &mut state);
                 updater.with_state(state)
             }
+            EditMessage::Help => FloatUpdater::new().with_state(state), // Can't reach
         },
     }
 }
@@ -130,6 +136,7 @@ pub fn folder_handle_input_normal(
                 KeyCode::Char('a') | KeyCode::Char('e') => {
                     FloatUpdater::new().with_message(EditMessage::Edit)
                 }
+                KeyCode::Char('?') => FloatUpdater::new().with_message(EditMessage::Help),
                 _ => FloatUpdater::new(),
             },
         }
@@ -216,6 +223,22 @@ pub fn folder_quit_normal(
         FolderNormalState::with_selected(select),
     ))));
     FloatUpdater::new()
+}
+
+pub fn folder_help_normal(
+    app: &mut App,
+    _state: &mut FolderEditState,
+) -> FloatUpdater<FolderEditState> {
+    app.cache.cursor.outdate();
+    let mut help = HelpState::new();
+    help.extend(vec![
+        HelpEntry::new("<Esc>/<q>", "Close the edit window in normal mode"),
+        HelpEntry::new("<Enter>", "Confirm the edit result"),
+        HelpEntry::new("<a>/<e>", "Enter editing mode in normal mode"),
+        HelpEntry::new("<Esc>", "Back to normal mode from editing mode"),
+        HelpEntry::new("<?>", "Open this window in normal mode"),
+    ]);
+    FloatUpdater::new().with_float(Float::Help(help))
 }
 
 pub fn folder_handle_input_editing(
@@ -335,6 +358,10 @@ pub fn edit_link_message(
             }
             EditMessage::Quit(select, ask_save) => link_quit_normal(app, state, select, ask_save),
             EditMessage::Back => FloatUpdater::new().with_state(state),
+            EditMessage::Help => {
+                let updater = link_help_normal(app, &mut state);
+                updater.with_state(state)
+            }
         },
         InputMode::Editing => match msg {
             EditMessage::HandleInput(key_event) => {
@@ -370,6 +397,7 @@ pub fn edit_link_message(
                 let updater = link_back_editing(app, &mut state);
                 updater.with_state(state)
             }
+            EditMessage::Help => FloatUpdater::new().with_state(state),
         },
     }
 }
@@ -403,6 +431,7 @@ pub fn link_handle_input_normal(
                 }
                 KeyCode::Left => FloatUpdater::new().with_message(EditMessage::SwitchLeft),
                 KeyCode::Right => FloatUpdater::new().with_message(EditMessage::SwitchRight),
+                KeyCode::Char('?') => FloatUpdater::new().with_message(EditMessage::Help),
                 _ => FloatUpdater::new(),
             },
         }
@@ -519,6 +548,25 @@ pub fn link_quit_normal(
         LinkNormalState::with_selected(state.from(), select),
     ))));
     FloatUpdater::new()
+}
+
+pub fn link_help_normal(app: &mut App, _state: &mut LinkEditState) -> FloatUpdater<LinkEditState> {
+    app.cache.cursor.outdate();
+    let mut help = HelpState::new();
+    help.extend(vec![
+        HelpEntry::new("<Esc>/<q>", "Close the edit window in normal mode"),
+        HelpEntry::new("<Enter>", "Confirm the edit result in normal mode"),
+        HelpEntry::new("<a>/<e>", "Enter editing mode in normal mode"),
+        HelpEntry::new("<Tab>/<BackTab>", "Switch between key and value input"),
+        HelpEntry::new("<Left>/<Right>", "Switch to key/value input directly"),
+        HelpEntry::new("<Esc>", "Back to normal mode from editing mode"),
+        HelpEntry::new(
+            "<Enter>",
+            "Switch to value input or confirm edit result in editing mode",
+        ),
+        HelpEntry::new("<?>", "Open this window in normal mode"),
+    ]);
+    FloatUpdater::new().with_float(Float::Help(help))
 }
 
 pub fn link_handle_input_editing(
