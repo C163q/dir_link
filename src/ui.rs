@@ -237,21 +237,17 @@ pub fn render_input(
     }
 }
 
-pub fn render_input_block(select: Option<usize>, mode: &InputMode, area: Rect, buf: &mut Buffer) {
+pub fn render_input_block(select: Option<usize>, area: Rect, buf: &mut Buffer) {
     let edit_type = match select {
         Some(_) => "Rename".set_style(Color::Cyan),
         None => "Append".set_style(Color::Green),
-    };
-    let edit_state = match mode {
-        InputMode::Editing => "E".set_style(Color::Yellow).bold(),
-        InputMode::Normal => "N".set_style(Color::Yellow).bold(),
     };
 
     let block = Block::bordered()
         .border_style(Style::default().fg(Color::White))
         .title_top(Line::from("Edit").centered())
         .title_bottom(Line::from(edit_type).left_aligned())
-        .title_bottom(Line::from(edit_state).right_aligned())
+        .title_bottom(Line::from("Press <?> for help").set_style(Color::LightBlue).right_aligned())
         .border_type(BorderType::Thick);
     block.render(area, buf);
 }
@@ -262,7 +258,7 @@ pub fn render_folder_edit(
     buf: &mut Buffer,
     cursor_cache: &mut CursorCache,
 ) {
-    render_input_block(state.selected(), state.mode(), area, buf);
+    render_input_block(state.selected(), area, buf);
 
     let mode = state.mode().to_owned();
     let chunk = Layout::default()
@@ -287,7 +283,7 @@ pub fn render_link_edit(
     buf: &mut Buffer,
     cursor_cache: &mut CursorCache,
 ) {
-    render_input_block(state.selected(), state.mode(), area, buf);
+    render_input_block(state.selected(), area, buf);
 
     let mode = state.mode().to_owned();
     let key_mode = match state.part() {

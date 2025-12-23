@@ -5,6 +5,7 @@ use crate::{
             Float,
             confirm::{ConfirmChoice, FolderDeleteConfirmState, LinkDeleteConfirmState},
             edit::{FolderEditState, LinkEditState},
+            help::{HelpEntry, HelpState},
         },
         message::{MessageUpdater, NormalFolderMessage, NormalLinkMessage},
         normal::{FolderNormalState, LinkNormalState},
@@ -174,6 +175,25 @@ pub fn folder_to_dir(
     } else {
         MessageUpdater::new()
     }
+}
+
+pub fn folder_help() -> MessageUpdater<NormalFolderMessage> {
+    let mut help = HelpState::new();
+    help.extend(vec![
+        HelpEntry::new("<Esc>/<q>", "Exit"),
+        HelpEntry::new("<Enter>/<Right>", "Select folder"),
+        HelpEntry::new("<Up>/<k>", "Move up"),
+        HelpEntry::new("<Down>/<j>", "Move down"),
+        HelpEntry::new("<Ctrl+Up>", "Switch up"),
+        HelpEntry::new("<K>", "Switch up"),
+        HelpEntry::new("<Ctrl+Down>", "Switch down"),
+        HelpEntry::new("<J>", "Switch down"),
+        HelpEntry::new("<a>", "Add new folder"),
+        HelpEntry::new("<r>", "Rename folder"),
+        HelpEntry::new("<x>", "Remove folder"),
+        HelpEntry::new("<?>", "Show this help"),
+    ]);
+    MessageUpdater::new().with_float(Float::Help(help))
 }
 
 pub fn link_back(
@@ -349,4 +369,24 @@ pub fn link_to_link(
     } else {
         MessageUpdater::new()
     }
+}
+
+pub fn link_help() -> MessageUpdater<NormalLinkMessage> {
+    let mut help = HelpState::new();
+    help.extend(vec![
+        HelpEntry::new("<Esc>/<q>", "Exit"),
+        HelpEntry::new("<Enter>", "Select link"),
+        HelpEntry::new("<Left>", "Back to folder list"),
+        HelpEntry::new("<Up>/<k>", "Move up"),
+        HelpEntry::new("<Down>/<j>", "Move down"),
+        HelpEntry::new("<Ctrl+Up>", "Switch up"),
+        HelpEntry::new("<K>", "Switch up"),
+        HelpEntry::new("<Ctrl+Down>", "Switch down"),
+        HelpEntry::new("<J>", "Switch down"),
+        HelpEntry::new("<a>", "Add new link"),
+        HelpEntry::new("<r>", "Rename link"),
+        HelpEntry::new("<x>", "Remove link"),
+        HelpEntry::new("<?>", "Show this help"),
+    ]);
+    MessageUpdater::new().with_float(Float::Help(help))
 }

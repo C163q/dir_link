@@ -94,6 +94,7 @@ pub fn handle_normal_folder_key_event(key: KeyEvent) -> Option<NormalFolderMessa
                 KeyCode::Char('a') => Some(NormalFolderMessage::Append),
                 KeyCode::Char('r') => Some(NormalFolderMessage::Rename),
                 KeyCode::Char('x') => Some(NormalFolderMessage::Remove),
+                KeyCode::Char('?') => Some(NormalFolderMessage::Help),
                 _ => None,
             },
         }
@@ -121,6 +122,7 @@ pub fn handle_normal_link_key_event(key: KeyEvent) -> Option<NormalLinkMessage> 
                 KeyCode::Char('a') => Some(NormalLinkMessage::Append),
                 KeyCode::Char('r') => Some(NormalLinkMessage::Rename),
                 KeyCode::Char('x') => Some(NormalLinkMessage::Remove),
+                KeyCode::Char('?') => Some(NormalLinkMessage::Help),
                 _ => None,
             },
         }
@@ -154,6 +156,7 @@ pub fn handle_normal_folder_message(
         NormalFolderMessage::Quit => normal::folder_quit(),
         NormalFolderMessage::Item(idx) => normal::folder_item(state, idx),
         NormalFolderMessage::ToDir(idx) => normal::folder_to_dir(state, data, idx),
+        NormalFolderMessage::Help => normal::folder_help(),
     }
 }
 
@@ -175,5 +178,6 @@ pub fn handle_normal_link_message(
         NormalLinkMessage::Quit => normal::link_quit(),
         NormalLinkMessage::Item(idx) => normal::link_item(state, idx),
         NormalLinkMessage::ToLink(idx) => normal::link_to_link(state, data, idx),
+        NormalLinkMessage::Help => normal::link_help(),
     }
 }

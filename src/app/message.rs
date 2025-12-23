@@ -20,6 +20,7 @@ pub enum NormalFolderMessage {
     Quit,
     Item(usize),
     ToDir(usize),
+    Help,
 }
 
 impl AppMessage for NormalFolderMessage {}
@@ -38,6 +39,7 @@ pub enum NormalLinkMessage {
     Quit,
     Item(usize),
     ToLink(usize),
+    Help,
 }
 
 impl AppMessage for NormalLinkMessage {}
