@@ -109,7 +109,7 @@ impl Widget for &mut App {
                     ui::render_corrupt_data_warning_float(state, area, buf);
                 }
                 Float::Help(state) => {
-                    let area = ui::common::centered_rect(50, 50, area);
+                    let area = ui::common::centered_rect(80, 80, area);
                     Clear.render(area, buf);
                     ui::render_help_float(state, area, buf);
                 }

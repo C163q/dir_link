@@ -24,6 +24,7 @@ use crate::app::float::warning::{CorruptDataWarningChoice, CorruptDataWarningSta
 use crate::app::normal::{FolderNormalState, InputMode, InputPart, LinkNormalState};
 use crate::data::dir::LinkDir;
 use crate::data::dirset::LinkDirSet;
+use crate::ui::common::Fill;
 
 pub fn render_main_border(area: Rect, buf: &mut Buffer) {
     let block = Block::bordered()
@@ -247,7 +248,11 @@ pub fn render_input_block(select: Option<usize>, area: Rect, buf: &mut Buffer) {
         .border_style(Style::default().fg(Color::White))
         .title_top(Line::from("Edit").centered())
         .title_bottom(Line::from(edit_type).left_aligned())
-        .title_bottom(Line::from("Press <?> for help").set_style(Color::LightBlue).right_aligned())
+        .title_bottom(
+            Line::from("Press <?> for help")
+                .set_style(Color::LightBlue)
+                .right_aligned(),
+        )
         .border_type(BorderType::Thick);
     block.render(area, buf);
 }
@@ -506,11 +511,18 @@ pub fn render_help_float(state: &HelpState, area: Rect, buf: &mut Buffer) {
         buf,
     );
 
-    let rows = state.iter().map(|entry| {
-        Row::new([
+    Fill::new(Style::new().bg(Color::Rgb(0x36, 0x36, 0x36))).render(chunk, buf);
+
+    let rows = state.iter().enumerate().map(|(i, entry)| {
+        let row = Row::new([
             Cell::from(Text::from(entry.key()).set_style(Color::LightGreen)),
             Cell::from(Text::from(entry.value()).set_style(Color::White)),
-        ])
+        ]);
+        if i % 2 == 0 {
+            row.style(Style::default().bg(Color::Rgb(0x30, 0x30, 0x30)))
+        } else {
+            row.style(Style::default().bg(Color::Rgb(0x26, 0x26, 0x26)))
+        }
     });
     let table = Table::new(
         rows,
